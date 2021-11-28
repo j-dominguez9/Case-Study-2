@@ -57,3 +57,4 @@ summary(gfit)
 summary(fit)
 work %>% colnames()
 ?inner_joinjj
+
