@@ -1,0 +1,385 @@
+---
+title: "case_study_2"
+author: "Joaquin Dominguez"
+date: "11/29/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r input data}
+library(tidyverse)
+library(janitor)
+work <- read_csv(file.choose())
+head(work)
+
+```
+
+
+
+
+```{r clean data}
+work <- work %>% janitor::clean_names()
+work$employee_count <- NULL
+work$over18 <- NULL
+work$standard_hours <- NULL
+work$id <- NULL
+work$employee_number <- NULL
+
+```
+
+```{r business travel}
+work$business_travel <- as_factor(work$business_travel)
+work$attrition <- as.factor(work$attrition)
+work %>% ggplot(aes(x = attrition, fill = business_travel)) + geom_bar()
+```
+
+```{r education field}
+total <- work %>% select(education_field, attrition) %>% 
+  group_by(education_field) %>% arrange(education_field) %>% 
+  count(education_field) %>% as.data.frame()
+yes_count <- work %>% select(education_field, attrition) %>% 
+  group_by(education_field) %>% arrange(education_field) %>% 
+  filter(attrition == "1") %>% count(education_field) %>% 
+  rename(yes = n) %>% as.data.frame()
+head(yes_count)
+head(total)
+join <- full_join(total, yes_count, by = "education_field") %>% mutate(perc = (yes/n)*100)
+join$education_field <- as.factor(join$education_field)
+head(join)
+join %>% ggplot(aes(x = education_field, y = perc)) + geom_bar(stat = 'identity')
+```
+
+
+```{r age}
+work <- work %>% mutate(attrition = if_else(attrition == "No", 0, 1))
+total <- work %>% select(age, attrition) %>% group_by(age) %>% arrange(age) %>% count(age) %>% as.data.frame()
+yes_count <- work %>% select(age, attrition) %>% group_by(age) %>% arrange(age) %>% filter(attrition == "1") %>% count(age) %>% rename(yes = n) %>% as.data.frame()
+join <- full_join(total, yes_count, by = "age")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = age, y = perc)) + geom_bar(stat = 'identity')
+
+fit = aov(attrition~age, data = work)
+summary(fit)
+
+work.age <- aggregate(x = work$attrition, by = list(cut(work$age, 7)), mean)
+names(work.age) <- c("age", "attrition")
+work.age
+work.age %>% ggplot(aes(x = age, y = attrition)) + geom_bar(stat = 'identity')
+```
+
+
+```{r business travel}
+total <- work %>% select(attrition, business_travel) %>% group_by(business_travel) %>% arrange(business_travel) %>% count(business_travel) %>% as.data.frame()
+yes_count <- work %>% select(business_travel, attrition) %>% group_by(business_travel) %>% arrange(business_travel) %>% filter(attrition == "1") %>% count(business_travel) %>% rename(yes = n) %>% as.data.frame()
+head(total)
+yes_count
+join <- full_join(total, yes_count, by = "business_travel")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = business_travel, y = perc)) + geom_bar(stat = 'identity')
+```
+
+
+```{r department}
+total <- work %>% select(attrition, department) %>% group_by(department) %>% arrange(department) %>% count(department) %>% as.data.frame()
+yes_count <- work %>% select(department, attrition) %>% group_by(department) %>% arrange(department) %>% filter(attrition == "1") %>% count(department) %>% rename(yes = n) %>% as.data.frame()
+head(total)
+yes_count
+join <- full_join(total, yes_count, by = "department")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = department, y = perc)) + geom_bar(stat = 'identity')
+```
+
+
+```{r distance from home}
+total <- work %>% select(attrition, distance_from_home) %>% mutate(distance_from_home = discretize(distance_from_home, method = 'interval', breaks = 6)) %>% group_by(distance_from_home) %>% arrange(distance_from_home) %>% count(distance_from_home) %>% as.data.frame()
+yes_count <- work %>% select(distance_from_home, attrition) %>% mutate(distance_from_home = discretize(distance_from_home, method = 'interval', breaks = 6)) %>% filter(attrition == "1") %>% group_by(distance_from_home) %>% arrange(distance_from_home) %>% count(distance_from_home) %>% rename(yes = n) %>% as.data.frame()
+head(total)
+yes_count
+range(work$distance_from_home)
+join <- full_join(total, yes_count, by = "distance_from_home")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = distance_from_home, y = perc)) + geom_bar(stat = 'identity')
+```
+
+
+
+```{r education}
+total <- work %>% select(attrition, education) %>% group_by(education) %>% arrange(education) %>% count(education) %>% as.data.frame()
+yes_count <- work %>% select(education, attrition) %>% group_by(education) %>% arrange(education) %>% filter(attrition == "1") %>% count(education) %>% rename(yes = n) %>% as.data.frame()
+head(total)
+yes_count
+join <- full_join(total, yes_count, by = "education")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = education, y = perc)) + geom_bar(stat = 'identity')
+```
+
+
+```{r environment satisfactioon}
+total <- work %>% select(attrition, environment_satisfaction) %>% group_by(environment_satisfaction) %>% arrange(environment_satisfaction) %>% count(environment_satisfaction) %>% as.data.frame()
+yes_count <- work %>% select(environment_satisfaction, attrition) %>% group_by(environment_satisfaction) %>% arrange(environment_satisfaction) %>% filter(attrition == "1") %>% count(environment_satisfaction) %>% rename(yes = n) %>% as.data.frame()
+head(total)
+yes_count
+join <- full_join(total, yes_count, by = "environment_satisfaction")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = environment_satisfaction, y = perc)) + geom_bar(stat = 'identity')
+
+```
+
+
+
+```{r gender}
+total <- work %>% select(attrition, gender) %>% group_by(gender) %>% arrange(gender) %>% count(gender) %>% as.data.frame()
+yes_count <- work %>% select(gender, attrition) %>% group_by(gender) %>% arrange(gender) %>% filter(attrition == "1") %>% count(gender) %>% rename(yes = n) %>% as.data.frame()
+head(total)
+yes_count
+join <- full_join(total, yes_count, by = "gender")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = gender, y = perc)) + geom_bar(stat = 'identity')
+```
+
+```{r hourly rate}
+total <- work %>% select(attrition, hourly_rate) %>% mutate(hourly_rate = discretize(hourly_rate, method = 'interval', breaks = 10)) %>% group_by(hourly_rate) %>% arrange(hourly_rate) %>% count(hourly_rate) %>% as.data.frame()
+yes_count <- work %>% select(hourly_rate, attrition) %>% mutate(hourly_rate = discretize(hourly_rate, method = 'interval', breaks = 10)) %>% filter(attrition == "1") %>% group_by(hourly_rate) %>% arrange(hourly_rate) %>% count(hourly_rate) %>% rename(yes = n) %>% as.data.frame()
+head(total)
+yes_count
+join <- full_join(total, yes_count, by = "hourly_rate")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = hourly_rate, y = perc)) + geom_bar(stat = 'identity')
+
+```
+
+
+```{r job involvement}
+total <- work %>% select(attrition, job_involvement) %>% group_by(job_involvement) %>% arrange(job_involvement) %>% count(job_involvement) %>% as.data.frame()
+yes_count <- work %>% select(job_involvement, attrition) %>% group_by(job_involvement) %>% arrange(job_involvement) %>% filter(attrition == "1") %>% count(job_involvement) %>% rename(yes = n) %>% as.data.frame()
+head(total)
+yes_count
+join <- full_join(total, yes_count, by = "job_involvement")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = job_involvement, y = perc)) + geom_bar(stat = 'identity')
+```
+
+```{r job level}
+total <- work %>% select(attrition, job_level) %>% group_by(job_level) %>% arrange(job_level) %>% count(job_level) %>% as.data.frame()
+yes_count <- work %>% select(job_level, attrition) %>% group_by(job_level) %>% arrange(job_level) %>% filter(attrition == "1") %>% count(job_level) %>% rename(yes = n) %>% as.data.frame()
+head(total)
+yes_count
+join <- full_join(total, yes_count, by = "job_level")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = job_level, y = perc)) + geom_bar(stat = 'identity')
+```
+
+```{r job role}
+total <- work %>% select(attrition, job_role) %>% group_by(job_role) %>% arrange(job_role) %>% count(job_role) %>% as.data.frame()
+yes_count <- work %>% select(job_role, attrition) %>% group_by(job_role) %>% arrange(job_role) %>% filter(attrition == "1") %>% count(job_role) %>% rename(yes = n) %>% as.data.frame()
+head(total)
+yes_count
+join <- full_join(total, yes_count, by = "job_role")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = job_role, y = perc)) + geom_bar(stat = 'identity') + coord_flip()
+```
+
+```{r job satisfaction}
+total <- work %>% select(attrition, job_satisfaction) %>% group_by(job_satisfaction) %>% arrange(job_satisfaction) %>% count(job_satisfaction) %>% as.data.frame()
+yes_count <- work %>% select(job_satisfaction, attrition) %>% group_by(job_satisfaction) %>% arrange(job_satisfaction) %>% filter(attrition == "1") %>% count(job_satisfaction) %>% rename(yes = n) %>% as.data.frame()
+head(total)
+yes_count
+join <- full_join(total, yes_count, by = "job_satisfaction")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = job_satisfaction, y = perc)) + geom_bar(stat = 'identity')
+```
+
+```{r marital status}
+total <- work %>% select(attrition, marital_status) %>% group_by(marital_status) %>% arrange(marital_status) %>% count(marital_status) %>% as.data.frame()
+yes_count <- work %>% select(marital_status, attrition) %>% group_by(marital_status) %>% arrange(marital_status) %>% filter(attrition == "1") %>% count(marital_status) %>% rename(yes = n) %>% as.data.frame()
+head(total)
+yes_count
+join <- full_join(total, yes_count, by = "marital_status")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = marital_status, y = perc)) + geom_bar(stat = 'identity')
+```
+
+
+```{r income}
+library(arules)
+total <- work %>% select(attrition, monthly_income) %>%
+  mutate(monthly_income = discretize(monthly_income, breaks = 6)) %>% 
+  group_by(monthly_income) %>% arrange(monthly_income) %>% 
+  count(monthly_income) %>% as.data.frame()
+yes_count <- work %>% select(attrition, monthly_income) %>% 
+  mutate(monthly_income = discretize(monthly_income, breaks = 6)) %>% filter(attrition == "1") %>% 
+  group_by(monthly_income) %>% arrange(monthly_income) %>% 
+  count(monthly_income) %>% rename(yes = n) %>% as.data.frame()
+yes_count
+join <- full_join(total, yes_count, by = "monthly_income")
+join
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = monthly_income, y = perc)) + geom_bar(stat = 'identity') + coord_flip()
+```
+
+```{r num of companies worked}
+total <- work %>% select(attrition, num_companies_worked) %>% group_by(num_companies_worked) %>% arrange(num_companies_worked) %>% count(num_companies_worked) %>% as.data.frame()
+yes_count <- work %>% select(num_companies_worked, attrition) %>% group_by(num_companies_worked) %>% arrange(num_companies_worked) %>% filter(attrition == "1") %>% count(num_companies_worked) %>% rename(yes = n) %>% as.data.frame()
+head(total)
+yes_count
+join <- full_join(total, yes_count, by = "num_companies_worked")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = num_companies_worked, y = perc)) + geom_bar(stat = 'identity')
+```
+
+```{r over time}
+total <- work %>% select(attrition, over_time) %>% group_by(over_time) %>% arrange(over_time) %>% count(over_time) %>% as.data.frame()
+yes_count <- work %>% select(over_time, attrition) %>% group_by(over_time) %>% arrange(over_time) %>% filter(attrition == "1") %>% count(over_time) %>% rename(yes = n) %>% as.data.frame()
+head(total)
+yes_count
+join <- full_join(total, yes_count, by = "over_time")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = over_time, y = perc)) + geom_bar(stat = 'identity')
+```
+
+```{r percent salary hike}
+total <- work %>% select(attrition, percent_salary_hike) %>% group_by(percent_salary_hike) %>% arrange(percent_salary_hike) %>% count(percent_salary_hike) %>% as.data.frame()
+yes_count <- work %>% select(percent_salary_hike, attrition) %>% group_by(percent_salary_hike) %>% arrange(percent_salary_hike) %>% filter(attrition == "1") %>% count(percent_salary_hike) %>% rename(yes = n) %>% as.data.frame()
+head(total)
+yes_count
+join <- full_join(total, yes_count, by = "percent_salary_hike")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = percent_salary_hike, y = perc)) + geom_bar(stat = 'identity')
+```
+
+```{r performance rating}
+total <- work %>% select(attrition, performance_rating) %>% group_by(performance_rating) %>% arrange(performance_rating) %>% count(performance_rating) %>% as.data.frame()
+yes_count <- work %>% select(performance_rating, attrition) %>% group_by(performance_rating) %>% arrange(performance_rating) %>% filter(attrition == "1") %>% count(performance_rating) %>% rename(yes = n) %>% as.data.frame()
+head(total)
+yes_count
+join <- full_join(total, yes_count, by = "performance_rating")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = performance_rating, y = perc)) + geom_bar(stat = 'identity')
+
+```
+
+```{r relationship satisfaction}
+total <- work %>% select(attrition, relationship_satisfaction) %>% group_by(relationship_satisfaction) %>% arrange(relationship_satisfaction) %>% count(relationship_satisfaction) %>% as.data.frame()
+yes_count <- work %>% select(relationship_satisfaction, attrition) %>% group_by(relationship_satisfaction) %>% arrange(relationship_satisfaction) %>% filter(attrition == "1") %>% count(relationship_satisfaction) %>% rename(yes = n) %>% as.data.frame()
+head(total)
+yes_count
+join <- full_join(total, yes_count, by = "relationship_satisfaction")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = relationship_satisfaction, y = perc)) + geom_bar(stat = 'identity')
+```
+
+```{r stock option level}
+total <- work %>% select(attrition, stock_option_level) %>% group_by(stock_option_level) %>% arrange(stock_option_level) %>% count(stock_option_level) %>% as.data.frame()
+yes_count <- work %>% select(stock_option_level, attrition) %>% group_by(stock_option_level) %>% arrange(stock_option_level) %>% filter(attrition == "1") %>% count(stock_option_level) %>% rename(yes = n) %>% as.data.frame()
+head(total)
+yes_count
+join <- full_join(total, yes_count, by = "stock_option_level")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = stock_option_level, y = perc)) + geom_bar(stat = 'identity')
+```
+
+```{r total working years}
+total <- work %>% select(attrition, total_working_years) %>% 
+  mutate(total_working_years = discretize(total_working_years, method = 'interval', breaks = 5)) %>% 
+  group_by(total_working_years) %>% arrange(total_working_years) %>% count(total_working_years) %>% 
+  as.data.frame()
+yes_count <- work %>% select(total_working_years, attrition) %>% filter(attrition == "1") %>% 
+  mutate(total_working_years = discretize(total_working_years, method = 'interval', breaks = 5)) %>% 
+  group_by(total_working_years) %>% arrange(total_working_years) %>% filter(attrition == "1") %>% 
+  count(total_working_years) %>% rename(yes = n) %>% as.data.frame()
+head(total)
+yes_count
+join <- full_join(total, yes_count, by = "total_working_years")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = total_working_years, y = perc)) + geom_bar(stat = 'identity')
+```
+
+```{r training times last year}
+total <- work %>% select(attrition, training_times_last_year) %>% group_by(training_times_last_year) %>% arrange(training_times_last_year) %>% count(training_times_last_year) %>% as.data.frame()
+yes_count <- work %>% select(training_times_last_year, attrition) %>% group_by(training_times_last_year) %>% arrange(training_times_last_year) %>% filter(attrition == "1") %>% count(training_times_last_year) %>% rename(yes = n) %>% as.data.frame()
+head(total)
+yes_count
+join <- full_join(total, yes_count, by = "training_times_last_year")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = training_times_last_year, y = perc)) + geom_bar(stat = 'identity')
+```
+
+```{r work life balance}
+total <- work %>% select(attrition, work_life_balance) %>% group_by(work_life_balance) %>% arrange(work_life_balance) %>% count(work_life_balance) %>% as.data.frame()
+yes_count <- work %>% select(work_life_balance, attrition) %>% group_by(work_life_balance) %>% arrange(work_life_balance) %>% filter(attrition == "1") %>% count(work_life_balance) %>% rename(yes = n) %>% as.data.frame()
+head(total)
+yes_count
+join <- full_join(total, yes_count, by = "work_life_balance")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = work_life_balance, y = perc)) + geom_bar(stat = 'identity')
+```
+
+```{r years at company}
+total <- work %>% select(attrition, years_at_company) %>% 
+  mutate(years_at_company = discretize(years_at_company, method = 'interval', breaks = 4)) %>% 
+  group_by(years_at_company) %>% arrange(years_at_company) %>% count(years_at_company) %>% as.data.frame()
+yes_count <- work %>% select(years_at_company, attrition) %>% 
+  mutate(years_at_company = discretize(years_at_company, method = 'interval', breaks = 4)) %>% 
+  filter(attrition == "1") %>% group_by(years_at_company) %>% arrange(years_at_company) %>% 
+  count(years_at_company) %>% rename(yes = n) %>% as.data.frame()
+head(total)
+yes_count
+join <- full_join(total, yes_count, by = "years_at_company")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = years_at_company, y = perc)) + geom_bar(stat = 'identity')
+```
+
+```{r years in current role}
+total <- work %>% select(attrition, years_in_current_role) %>% 
+  mutate(years_in_current_role = discretize(years_in_current_role, method = 'interval', breaks = 6)) %>% 
+  group_by(years_in_current_role) %>% arrange(years_in_current_role) %>% count(years_in_current_role) %>% as.data.frame()
+yes_count <- work %>% select(years_in_current_role, attrition) %>% 
+  mutate(years_in_current_role = discretize(years_in_current_role, method = 'interval', breaks = 6)) %>% 
+  filter(attrition == "1") %>% group_by(years_in_current_role) %>% arrange(years_in_current_role) %>% 
+  count(years_in_current_role) %>% rename(yes = n) %>% as.data.frame()
+head(total)
+yes_count
+join <- full_join(total, yes_count, by = "years_in_current_role")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = years_in_current_role, y = perc)) + geom_bar(stat = 'identity')
+```
+
+```{r years since last promotion}
+total <- work %>% select(attrition, years_since_last_promotion) %>% 
+  mutate(years_since_last_promotion = discretize(years_since_last_promotion, method = 'interval', breaks = 5)) %>% 
+  group_by(years_since_last_promotion) %>% arrange(years_since_last_promotion) %>% count(years_since_last_promotion) %>% as.data.frame()
+yes_count <- work %>% select(years_since_last_promotion, attrition) %>% 
+  mutate(years_since_last_promotion = discretize(years_since_last_promotion, method = 'interval', breaks = 5)) %>% 
+  filter(attrition == "1") %>% group_by(years_since_last_promotion) %>% arrange(years_since_last_promotion) %>% 
+  count(years_since_last_promotion) %>% rename(yes = n) %>% as.data.frame()
+head(total)
+yes_count
+join <- full_join(total, yes_count, by = "years_since_last_promotion")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = years_since_last_promotion, y = perc)) + geom_bar(stat = 'identity')
+```
+
+```{r yrs with current manager}
+total <- work %>% select(attrition, years_with_curr_manager) %>% 
+  mutate(years_with_curr_manager = discretize(years_with_curr_manager, method = 'interval', breaks = 6)) %>% 
+  group_by(years_with_curr_manager) %>% arrange(years_with_curr_manager) %>% count(years_with_curr_manager) %>% as.data.frame()
+yes_count <- work %>% select(years_with_curr_manager, attrition) %>% 
+  mutate(years_with_curr_manager = discretize(years_with_curr_manager, method = 'interval', breaks = 6)) %>% 
+  filter(attrition == "1") %>% group_by(years_with_curr_manager) %>% arrange(years_with_curr_manager) %>% 
+  count(years_with_curr_manager) %>% rename(yes = n) %>% as.data.frame()
+head(total)
+yes_count
+join <- full_join(total, yes_count, by = "years_with_curr_manager")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = years_with_curr_manager, y = perc)) + geom_bar(stat = 'identity')
+```
+
