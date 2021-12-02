@@ -294,12 +294,199 @@ join <- join %>% mutate(perc = (yes/n)*100)
 join %>% ggplot(aes(x = stock_option_level, y = perc)) + geom_bar(stat = 'identity')
 
 ### total working years
-total <- work %>% select(attrition, total_working_years) %>% group_by(total_working_years) %>% arrange(total_working_years) %>% count(total_working_years) %>% as.data.frame()
-yes_count <- work %>% select(total_working_years, attrition) %>% group_by(total_working_years) %>% arrange(total_working_years) %>% filter(attrition == "1") %>% count(total_working_years) %>% rename(yes = n) %>% as.data.frame()
+total <- work %>% select(attrition, total_working_years) %>% 
+  mutate(total_working_years = discretize(total_working_years, method = 'interval', breaks = 5)) %>% 
+  group_by(total_working_years) %>% arrange(total_working_years) %>% count(total_working_years) %>% 
+  as.data.frame()
+yes_count <- work %>% select(total_working_years, attrition) %>% filter(attrition == "1") %>% 
+  mutate(total_working_years = discretize(total_working_years, method = 'interval', breaks = 5)) %>% 
+  group_by(total_working_years) %>% arrange(total_working_years) %>% 
+  count(total_working_years) %>% rename(yes = n) %>% as.data.frame()
 head(total)
 yes_count
 join <- full_join(total, yes_count, by = "total_working_years")
 join <- join %>% mutate(perc = (yes/n)*100)
 join %>% ggplot(aes(x = total_working_years, y = perc)) + geom_bar(stat = 'identity')
+
+### training times last year
+total <- work %>% select(attrition, training_times_last_year) %>% group_by(training_times_last_year) %>% arrange(training_times_last_year) %>% count(training_times_last_year) %>% as.data.frame()
+yes_count <- work %>% select(training_times_last_year, attrition) %>% group_by(training_times_last_year) %>% arrange(training_times_last_year) %>% filter(attrition == "1") %>% count(training_times_last_year) %>% rename(yes = n) %>% as.data.frame()
+head(total)
+yes_count
+join <- full_join(total, yes_count, by = "training_times_last_year")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = training_times_last_year, y = perc)) + geom_bar(stat = 'identity')
+
+### work life balance
+total <- work %>% select(attrition, work_life_balance) %>% group_by(work_life_balance) %>% arrange(work_life_balance) %>% count(work_life_balance) %>% as.data.frame()
+yes_count <- work %>% select(work_life_balance, attrition) %>% group_by(work_life_balance) %>% arrange(work_life_balance) %>% filter(attrition == "1") %>% count(work_life_balance) %>% rename(yes = n) %>% as.data.frame()
+head(total)
+yes_count
+join <- full_join(total, yes_count, by = "work_life_balance")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = work_life_balance, y = perc)) + geom_bar(stat = 'identity')
+
+### years at company
+total <- work %>% select(attrition, years_at_company) %>% 
+  mutate(years_at_company = discretize(years_at_company, method = 'interval', breaks = 4)) %>% 
+  group_by(years_at_company) %>% arrange(years_at_company) %>% count(years_at_company) %>% as.data.frame()
+yes_count <- work %>% select(years_at_company, attrition) %>% 
+  mutate(years_at_company = discretize(years_at_company, method = 'interval', breaks = 4)) %>% 
+  filter(attrition == "1") %>% group_by(years_at_company) %>% arrange(years_at_company) %>% 
+  count(years_at_company) %>% rename(yes = n) %>% as.data.frame()
+head(total)
+yes_count
+join <- full_join(total, yes_count, by = "years_at_company")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = years_at_company, y = perc)) + geom_bar(stat = 'identity')
+
+### years at current role
+total <- work %>% select(attrition, years_in_current_role) %>% 
+  mutate(years_in_current_role = discretize(years_in_current_role, method = 'interval', breaks = 6)) %>% 
+  group_by(years_in_current_role) %>% arrange(years_in_current_role) %>% count(years_in_current_role) %>% as.data.frame()
+yes_count <- work %>% select(years_in_current_role, attrition) %>% 
+  mutate(years_in_current_role = discretize(years_in_current_role, method = 'interval', breaks = 6)) %>% 
+  filter(attrition == "1") %>% group_by(years_in_current_role) %>% arrange(years_in_current_role) %>% 
+  count(years_in_current_role) %>% rename(yes = n) %>% as.data.frame()
+head(total)
+yes_count
+join <- full_join(total, yes_count, by = "years_in_current_role")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = years_in_current_role, y = perc)) + geom_bar(stat = 'identity')
+
+
+### years since last promotion
+total <- work %>% select(attrition, years_since_last_promotion) %>% 
+  mutate(years_since_last_promotion = discretize(years_since_last_promotion, method = 'interval', breaks = 5)) %>% 
+  group_by(years_since_last_promotion) %>% arrange(years_since_last_promotion) %>% count(years_since_last_promotion) %>% as.data.frame()
+yes_count <- work %>% select(years_since_last_promotion, attrition) %>% 
+  mutate(years_since_last_promotion = discretize(years_since_last_promotion, method = 'interval', breaks = 5)) %>% 
+  filter(attrition == "1") %>% group_by(years_since_last_promotion) %>% arrange(years_since_last_promotion) %>% 
+  count(years_since_last_promotion) %>% rename(yes = n) %>% as.data.frame()
+head(total)
+yes_count
+join <- full_join(total, yes_count, by = "years_since_last_promotion")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = years_since_last_promotion, y = perc)) + geom_bar(stat = 'identity')
+
+### years with current manager
+total <- work %>% select(attrition, years_with_curr_manager) %>% 
+  mutate(years_with_curr_manager = discretize(years_with_curr_manager, method = 'interval', breaks = 6)) %>% 
+  group_by(years_with_curr_manager) %>% arrange(years_with_curr_manager) %>% count(years_with_curr_manager) %>% as.data.frame()
+yes_count <- work %>% select(years_with_curr_manager, attrition) %>% 
+  mutate(years_with_curr_manager = discretize(years_with_curr_manager, method = 'interval', breaks = 6)) %>% 
+  filter(attrition == "1") %>% group_by(years_with_curr_manager) %>% arrange(years_with_curr_manager) %>% 
+  count(years_with_curr_manager) %>% rename(yes = n) %>% as.data.frame()
+head(total)
+yes_count
+join <- full_join(total, yes_count, by = "years_with_curr_manager")
+join <- join %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = years_with_curr_manager, y = perc)) + geom_bar(stat = 'identity')
+
+remove(wave_theta)
+## Significance
+### Internal
+#### - Work/Life Balance
+#### - Percent Salary Hike
+#### - Overtime
+#### - Income
+#### - Job involvement
+### worth exploring
+#### - job satisfaction
+#### - job role
+### External
+#### - Work/Life Balance
+#### - Distance from home
+#### - Age
+### worth exploring
+#### - total working years
+
+## percent_salary_hike has highest AIC, so out
+
+pct <- C(work$attrition, treatment)
+ot <- C(factor(work$over_time), treatment)
+is.factor(work$attrition)
+
+attributes(pct)
+summary(lm(work_life_balance ~ pct, data = work))
+logit <- glm(attrition ~ factor(work_life_balance), data = work, family = 'binomial')
+wald.test(b = coef(logit), Sigma = vcov(logit), Terms = 2:4)
+exp(coef(logit))
+nd1 <- data.frame(work_life_balance = factor(1:4))
+nd1
+nd1$wlbp <- predict(logit, newdata = nd1, type = 'response') 
+nd1
+with(logit, null.deviance - deviance)
+with(logit, df.null - df.residual)
+with(logit, pchisq(null.deviance - deviance, df.null - df.residual, lower.tail = FALSE))
+logLik(logit)
+summary(glm(attrition ~ percent_salary_hike, data = work, family = 'binomial'))
+summary(glm(attrition ~ factor(over_time), data = work, family = 'binomial'))
+summary(glm(attrition ~ monthly_income, data = work, family = 'binomial'))
+summary(glm(attrition ~ factor(job_involvement), data = work, family = 'binomial'))
+install.packages("aod")
+library(aod)
+perc_sal_hike.mod <- glm(attrition ~ percent_salary_hike, data = work, family = 'binomial')
+over_time.mod <- glm(attrition ~ factor(over_time), data = work, family = 'binomial')
+monthly_inc.mod <- glm(attrition ~ monthly_income, data = work, family = 'binomial')
+job_inv.mod <- glm(attrition ~ factor(job_involvement), data = work, family = 'binomial')
+wlb.mod <- glm(attrition ~ factor(work_life_balance), data = work, family = 'binomial')
+psh.ot.mod <- glm(attrition ~ percent_salary_hike +  factor(over_time), data = work, family = 'binomial')
+psh.mi.mod <- glm(attrition ~ percent_salary_hike +  monthly_income, data = work, family = 'binomial')
+psh.ji.mod <- glm(attrition ~ percent_salary_hike +  factor(job_involvement), data = work, family = 'binomial')
+psh.wlb.mod <- psh.ot.mod <- glm(attrition ~ percent_salary_hike + factor(work_life_balance), data = work, family = 'binomial')
+ot.mi.mod <- glm(attrition ~ factor(over_time) + monthly_income, data = work, family = 'binomial')
+ot.ji.mod <- glm(attrition ~ factor(over_time) + factor(job_involvement), data = work, family = 'binomial')
+ot.wlb.mod <- glm(attrition ~ factor(over_time) + factor(work_life_balance), data = work, family = 'binomial')
+mi.ji.mod <- glm(attrition ~ monthly_income + factor(job_involvement), data = work, family = 'binomial')
+mi.wlb.mod <- glm(attrition ~ monthly_income + factor(work_life_balance), data = work, family = 'binomial')
+ji.wlb.mod <- glm(attrition ~ factor(job_involvement) + factor(work_life_balance), data = work, family = 'binomial')
+mi.ot.int.mod <- glm(attrition ~ factor(over_time)*monthly_income, data = work, family = 'binomial')
+mi.ji.int.mod <- glm(attrition ~ factor(over_time)*factor(job_involvement), data = work, family = 'binomial')
+mi.wlb.int.mod <- glm(attrition ~ monthly_income*factor(work_life_balance), data = work, family = 'binomial')
+ot.ji.wlb.mod <- glm(attrition ~ factor(over_time) + factor(job_involvement) + factor(work_life_balance), data = work, family = 'binomial')
+ot.ji.wlb.int.mod <- glm(attrition ~ factor(over_time) + factor(job_involvement)*factor(work_life_balance), data = work, family = 'binomial')
+ot.wlb.int.ji.mod <- glm(attrition ~ factor(over_time)*factor(work_life_balance) + factor(job_involvement), data = work, family = 'binomial')
+ot.ji.mi.mod <- glm(attrition ~ factor(over_time) + factor(job_involvement) + monthly_income, data = work, family = 'binomial')
+ot.ji.mi.int.mod <- glm(attrition ~ factor(over_time) + factor(job_involvement)*monthly_income, data = work, family = 'binomial')
+ot.ji.int.mi.mod <- glm(attrition ~ factor(over_time)*factor(job_involvement) + monthly_income, data = work, family = 'binomial')
+wlb.ji.yicr.mod <- glm(attrition ~ factor(work_life_balance) + factor(job_involvement) + years_in_current_role, data = work, family = 'binomial')
+wlb.yicr.mod <- glm(attrition ~ factor(work_life_balance) + years_in_current_role, data = work, family = 'binomial')
+yicr.mod <- glm(attrition ~ years_in_current_role, data = work, family = 'binomial')
+ji.yicr.mood <- glm(attrition ~ years_in_current_role + factor(job_involvement), data = work, family = 'binomial')
+install.packages("AICcmodavg")
+library(AICcmodavg)
+models <- list(over_time.mod, monthly_inc.mod, job_inv.mod, wlb.mod, psh.ji.mod, ot.mi.mod, ot.ji.mod, ot.wlb.mod, mi.ji.mod, mi.wlb.mod, ji.wlb.mod, mi.ot.int.mod, mi.ji.int.mod, mi.wlb.int.mod, ot.ji.wlb.mod, ot.ji.wlb.int.mod, ot.wlb.int.ji.mod, ot.ji.mi.mod, ot.ji.mi.int.mod, ot.ji.int.mi.mod, wlb.ji.yicr.mod, wlb.yicr.mod, yicr.mod, ji.yicr.mood)
+model.names <- c('over_time.mod', 'monthly_inc.mod', 'job_inv.mod', 'wlb.mod', 'psh.ji.mod', 'ot.mi.mod', 'ot.ji.mod', 'ot.wlb.mod', 'mi.ji.mod', 'mi.wlb.mod', 'ji.wlb.mod', 'mi.ot.int.mod', 'mi.ji.int.mod', 'mi.wlb.int.mod', 'ot.ji.wlb.mod', 'ot.ji.wlb.int.mod', 'ot.wlb.int.ji.mod', 'ot.ji.mi.mod', 'ot.ji.mi.int.mod', 'ot.ji.int.mi.mod', 'wlb.ji.yicr.mod', 'wlb.yicr.mod', 'yicr.mod', 'ji.yicr.mood')
+aictab(cand.set = models, modnames = model.names)
+
+
+#----- job role trends
+is.factor(work$job_satisfaction)
+js <- work %>% select(job_role, job_satisfaction) %>% group_by(job_role) %>% mutate(job_role = factor(job_role))
+js
+work %>% ggplot(aes(x = factor(job_role), y = factor(job_satisfaction))) + geom_bar(stat = 'summary', fun = 'mean')
+work %>% ggplot(aes(x = factor(job_role), y = factor(job_satisfaction))) + stat_summary(fun = 'mean', geom = 'bar')
+
+js2 <- ddply(js, .(job_role), summarize, mean = mean(job_satisfaction))
+js2 %>% ggplot(aes(x = job_role, y = mean)) + geom_bar(stat = 'identity') + coord_flip()
+
+
+total <- work %>% select(job_role, over_time) %>% mutate(over_time = if_else(over_time == "No", 0, 1)) %>% 
+  group_by(job_role) %>% arrange(job_role) %>% count(job_role) %>% as.data.frame()
+yes_count <- work %>% select(job_role, over_time) %>% 
+  mutate(over_time = if_else(over_time == "No", 0, 1)) %>% 
+  group_by(job_role) %>% arrange(job_role) %>% filter(over_time == "1") %>% 
+  count(job_role) %>% rename(yes = n) %>% as.data.frame()
+total
+yes_count
+join <- full_join(total, yes_count, by = 'job_role') %>% mutate(perc = (yes/n)*100)
+join %>% ggplot(aes(x = job_role, y = perc)) + geom_bar(stat = 'identity') + coord_flip()
+
+
+
+
+
+
 
 
