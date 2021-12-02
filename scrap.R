@@ -485,8 +485,45 @@ join %>% ggplot(aes(x = job_role, y = perc)) + geom_bar(stat = 'identity') + coo
 
 
 
+fit = lm(monthly_income~., data = work)
+summary(fit)
+
+set.seed(1)
+
+splitPerc = .70
+mi_model <-  work %>% dplyr::select(everything(), -YearsAtCompany, -TotalWorkingYears, -JobLevel, -PercentSalaryHike )
+trainInd <- sample(1:dim(work)[1],round(splitPerc * dim(work)[1]))
+work_model_Train = work[trainInd,]
+work_model_Test = work[-trainInd,]
+work_model_test2 <- work_model_Test %>% select(everything(), -monthly_income)
+colnames(work_model_Test)
 
 
+mi_lm <- lm(monthly_income~., data = work_model_Train)
+sqrt(mean(mi_lm$residuals^2))
+mi_lm_2 <- lm(monthly_income~., data = work)
+sqrt(mean(mi_lm_2$residuals^2))
+no_salary <- read.csv(file.choose())
+is.data.frame(no_salary)
+predict(mi_lm_2, newdata = no_salary)
+no_salary <- no_salary %>% janitor::clean_names()
+no_salary$employee_count <- NULL
+no_salary$over18 <- NULL
+no_salary$standard_hours <- NULL
+no_salary<- NULL
+no_salary$employee_number <- NULL
+predict <- predict.lm(mi_lm, newdata = work_model_Test, type = 'response')
+error <- work_model_Test$monthly_income-predict
+rmse <- sqrt(mean(error^2))
+rmse
+
+
+
+model <- lm(y~x+x1, data=train)
+p.test <- predict(model, newdata=test, type='response')
+error <- test$MonthlyIncome-p.test
+rmse <- sqrt(mean(error^2))
+c(RMSE = rmse, R2=summary(model)$r.squared)
 
 
 
