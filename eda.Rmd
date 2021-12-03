@@ -508,5 +508,11 @@ predict <- predict.lm(mi_lm, newdata = work_model_Test, type = 'response')
 error <- work_model_Test$monthly_income-predict
 rmse <- sqrt(mean(error^2))
 rmse
+
+install.packages("olsrr")
+library(olsrr)
+olsrr::ols_step_forward_p(mi_lm_2, penter = 0.05, details = TRUE)
+xyz <- lm(monthly_income~job_level +  job_role + total_working_years + business_travel, data = work)
+sqrt(mean(xyz$residuals^2))
 ```
 

@@ -494,6 +494,7 @@ splitPerc = .70
 mi_model <-  work %>% dplyr::select(everything(), -YearsAtCompany, -TotalWorkingYears, -JobLevel, -PercentSalaryHike )
 trainInd <- sample(1:dim(work)[1],round(splitPerc * dim(work)[1]))
 work_model_Train = work[trainInd,]
+work_model_train2 <- work_model_Train %>% select(everything(), -monthly_income)
 work_model_Test = work[-trainInd,]
 work_model_test2 <- work_model_Test %>% select(everything(), -monthly_income)
 colnames(work_model_Test)
@@ -525,5 +526,27 @@ error <- test$MonthlyIncome-p.test
 rmse <- sqrt(mean(error^2))
 c(RMSE = rmse, R2=summary(model)$r.squared)
 
+### Naive-Bayes
+nb <- naiveBayes(work_model_train2, work_model_Train$monthly_income)
+pred <- predict(nb, work_model_Test)
+pred
+error <- work_model_Test$monthly_income-as.numeric(pred)
+sqrt(mean(error^2))
+
+install.packages("olsrr")
+library(olsrr)
+olsrr::ols_step_forward_p(mi_lm_2, penter = 0.05, details = TRUE)
+xyz <- lm(monthly_income~job_level +  job_role + total_working_years + business_travel, data = work)
+error <- work_model_Test$monthly_income-predict
+rmse <- sqrt(mean(error^2))
+rmse
+sqrt(mean(xyz$residuals^2))
+ols_step_both_p(mi_lm_2, penter = 0.05, prem = 0.05, details = TRUE)
+ols_step_backward_p(mi_lm_2, prem = 0.05, details = TRUE)
+
+lp <- glm(attrition~., data = work, family = 'binomial')
+library(leaps)
+summary(leaps::regsubsets(attrition~., data = work, method = 'exhaustive'))
+?regsubsets()
 
 
