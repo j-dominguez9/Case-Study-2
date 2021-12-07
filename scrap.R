@@ -490,7 +490,7 @@ summary(fit)
 
 set.seed(1)
 
-splitPerc = .70
+splitPerc = .75
 mi_model <-  work %>% dplyr::select(everything(), -YearsAtCompany, -TotalWorkingYears, -JobLevel, -PercentSalaryHike )
 trainInd <- sample(1:dim(work)[1],round(splitPerc * dim(work)[1]))
 work_model_Train = work[trainInd,]
@@ -557,9 +557,120 @@ df_att_rank <- data.frame(Name = c("age", "business_travelTravel_Frequently", "b
 df_att_rank %>% arrange(desc(Overall))
 olsrr::ols_step_forward_p(test_model, penter = 0.05, details = TRUE)
 olsrr::ols_step_best_subset(mi_lm_2)
-lp_mod <- summary(regsubsets(monthly_income~., data = work, nvmax = 15))
+models <- regsubsets(monthly_income~., data = work, nvmax = 20)
+res.sum <- summary(models)
+res.sum
 data.frame(
   Adj.R2 = which.max(lp_mod$adjr2),
   CP = which.min(lp_mod$cp),
   BIC = which.min(lp_mod$bic)
+)
+is.factor(work$over_time)
+work$department <- as.factor(work$department)
+work$education_field <- as.factor(work$education_field)
+work$gender <- as.factor(work$gender)
+work$marital_status <- as.factor(work$marital_status)
+work$over_time <- as.factor(work$over_time)
+
+levels(work$education_field)
+work$education_field <- recode_factor(work$education_field,"Human Resources" = 'human_resources',"Marketing" = 'marketing', "Medical" = 'medical',"Other" = 'other', "Technical Degree" = 'technical_degree', "Life Sciences" = 'life_sciences')
+levels(work$education_field)
+levels(work$department)
+work$department <- recode_factor(work$department, "Human Resources" = 'human_resources', "Research & Development" = 'research_and_development', "Sales" = 'sales')
+levels(work$job_role)
+work$job_role <- recode_factor(work$job_role, "Healthcare Representative" = 'healthcare_representative', "Human Resources" = 'human_resources', "Laboratory Technician" = 'laboratory_technician', "Manager" = 'manager', "Manufacturing Director" = 'manufacturing_director', "Research Director" = 'research_director', "Research Scientist" = 'research_scientist', "Sales Executive" = 'sales_executive', "Sales Representative" = 'sales_representative')
+
+
+?naiveBayes
+
+get_model_formula <- function(id, object, outcome){
+  # get models data
+  models <- summary(object)$which[id,-1]
+  # Get outcome variable
+  #form <- as.formula(object$call[[2]])
+  #outcome <- all.vars(form)[1]
+  # Get model predictors
+  predictors <- names(which(models == TRUE))
+  predictors <- paste(predictors, collapse = "+")
+  # Build model formula
+  as.formula(paste0(outcome, "~", predictors))
+}
+
+
+get_model_formula(15, models, "monthly_income")
+get_cv_error <- function(model.formula, data){
+  set.seed(1)
+  train.control <- trainControl(method = "cv", number = 5)
+  cv <- train(model.formula, data = data, method = "lm",
+              trControl = train.control)
+  cv$results$RMSE
+}
+model.ids <- 1:5
+cv.errors <-  map(model.ids, get_model_formula, models, "monthly_income") %>%
+  map(get_cv_error, data = work) %>%
+  unlist()
+cv.errors
+
+coef(models, 10)
+models
+
+leaps_mod <- lm(monthly_income ~ business_travel + daily_rate + department + 
+                 + job_level + job_role + job_role  + 
+                  job_role + monthly_rate + total_working_years + 
+                  years_since_last_promotion + years_with_curr_manager, data = work_model_Train)
+
+pred <- predict.lm(leaps_mod, newdata = work_model_Test, type = 'response')
+error <- work_model_Test$monthly_income-pred
+rmse <- sqrt(mean(error^2))
+rmse
+### train/test RMSE: 1053.978
+### AIC: 10947.86
+AIC(leaps_mod)
+
+
+leaps_mod_2 <- lm(monthly_income ~ business_travel + daily_rate + department + 
+                    + job_level + job_role + job_role  + 
+                    job_role + monthly_rate + total_working_years + 
+                    years_since_last_promotion + years_with_curr_manager, data = work)
+ols_press(leaps_mod_2)
+### PRESS : 976591613
+sqrt(mean(leaps_mod_2$residuals^2))
+### RMSE: 1038.094
+ols_regress(leaps_mod_2)
+### adj r2: 0.948
+ols_aic(leaps_mod_2)
+### AIC: 14593.5
+
+library(olsrr)
+ols_step_both_p(mi_lm_2, pent = 0.01, prem = 0.01, details = TRUE)
+stepwise_mod <- lm(monthly_income~ job_level + job_role + total_working_years + business_travel, data = work)
+ols_press(leaps_mod_2)
+### PRESS: 983282198
+ols_coll_diag(stepwise_mod)
+ols_aic(stepwise_mod)
+ols_regress(stepwise_mod)
+sqrt(mean(stepwise_mod$residuals^2))
+### RMSE: 1048.192
+### adj. r2 : .947
+### AIC: 14598.34
+
+stepwise_mod <- lm(monthly_income~ job_level + job_role + total_working_years + business_travel, data = work_model_Train)
+pred <- predict.lm(stepwise_mod, newdata = work_model_Test, type = 'response')
+error <- work_model_Test$monthly_income-pred
+rmse <- sqrt(mean(error^2))
+rmse
+#### train/test RMSE: 1049.652
+AIC(stepwise_mod)
+### AIC: 10951.16
+ols_mallows_cp(stepwise_mod, work_mod)
+work_mod <- lm(monthly_income~., data = work)
+
+colnames(no_salary)
+library(here)
+here()
+tribble(
+  ~Name, ~MallowsCp, ~ adjr2, ~AIC, ~PRESS,
+  "forward_mod", -4.608704, 0.947, 14598.34, 983282198,
+  "leaps_mod_2", -11.01006, 0.948, 14593.5, 976591613,
+  "stepwise_mod", -4.608704, 0.947, 14598.34, 983282198,
 )

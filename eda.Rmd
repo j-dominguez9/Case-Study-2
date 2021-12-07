@@ -26,6 +26,8 @@ library(class)
 library(caret)
 library(e1071)
 library(olsrr)
+library(leaps)
+library(tibble)
 work <- read_csv(file.choose())
 head(work)
 
@@ -477,67 +479,161 @@ join %>% ggplot(aes(x = job_role, y = perc)) + geom_bar(stat = 'identity') + coo
 
 ```
 
-```{r No Salary model and predictions}
+```{r Format data set to prepare for analysis}
+
+### identify and transform factor variables that are not currently classified as factors
+is.factor(work$over_time)
+work$department <- as.factor(work$department)
+work$education_field <- as.factor(work$education_field)
+work$gender <- as.factor(work$gender)
+work$marital_status <- as.factor(work$marital_status)
+work$over_time <- as.factor(work$over_time)
+
+### clean factor levels
+levels(work$education_field)
+work$education_field <- recode_factor(work$education_field,"Human Resources" = 'human_resources',"Marketing" = 'marketing', "Medical" = 'medical',"Other" = 'other', "Technical Degree" = 'technical_degree', "Life Sciences" = 'life_sciences')
+levels(work$education_field)
+levels(work$department)
+work$department <- recode_factor(work$department, "Human Resources" = 'human_resources', "Research & Development" = 'research_and_development', "Sales" = 'sales')
+levels(work$job_role)
+work$job_role <- recode_factor(work$job_role, "Healthcare Representative" = 'healthcare_representative', "Human Resources" = 'human_resources', "Laboratory Technician" = 'laboratory_technician', "Manager" = 'manager', "Manufacturing Director" = 'manufacturing_director', "Research Director" = 'research_director', "Research Scientist" = 'research_scientist', "Sales Executive" = 'sales_executive', "Sales Representative" = 'sales_representative')
+
+```
+
+
+
+```{r No Salary model preparation}
+### create base model with all variables
 fit = lm(monthly_income~., data = work)
 summary(fit)
 
+### create train and test data sets split at 75%
 set.seed(1)
 
-splitPerc = .70
+splitPerc = .75
 mi_model <-  work %>% dplyr::select(everything(), -YearsAtCompany, -TotalWorkingYears, -JobLevel, -PercentSalaryHike )
 trainInd <- sample(1:dim(work)[1],round(splitPerc * dim(work)[1]))
 work_model_Train = work[trainInd,]
+work_model_train2 <- work_model_Train %>% select(everything(), -monthly_income)
 work_model_Test = work[-trainInd,]
 work_model_test2 <- work_model_Test %>% select(everything(), -monthly_income)
 colnames(work_model_Test)
+```
 
 
+```{r Naive Bayes - No Salary}
+nb <- naiveBayes(monthly_income~., data = work_model_Train)
+pred <- predict(nb, work_model_test2)
+pred
+error <- work_model_Test$monthly_income-as.numeric(pred)
+sqrt(mean(error^2))
 
-install.packages("olsrr")
-library(olsrr)
-olsrr::ols_step_forward_p(mi_lm_2, penter = 0.05, details = TRUE)
-xyz <- lm(monthly_income~job_level +  job_role + total_working_years + business_travel, data = work)
+### an RMSE of 7897.961 is too high for what we're looking for, let's consider alternative models
+
+```
+
+
+```{r Forward selection - No Salary}
+ols_step_forward_p(mi_lm_2, penter = 0.01, details = TRUE)
+forward_mod <- lm(monthly_income~job_level +  job_role + total_working_years + business_travel, data = work)
+### evaluating model
 sqrt(mean(xyz$residuals^2))
-### rmse = 1048
+ols_regress(forward_mod)
+ols_press(forward_mod)
+ols_aic(forward_mod)
+ols_mallows_cp(forward_mod, fit)
+### Adj. R-squared = 0.947
+### RMSE = 1048.192
+### PRESS: 983282198
+### AIC: 14598.34
+### Mallows Cp: -4.608704
+```
 
 
+```{r Leaps selection - No Salary}
+### create function to use leaps package to select best predictor variables
+get_model_formula <- function(id, object, outcome){
+  # get models data
+  models <- summary(object)$which[id,-1]
+  # Get outcome variable
+  #form <- as.formula(object$call[[2]])
+  #outcome <- all.vars(form)[1]
+  # Get model predictors
+  predictors <- names(which(models == TRUE))
+  predictors <- paste(predictors, collapse = "+")
+  # Build model formula
+  as.formula(paste0(outcome, "~", predictors))
+}
 
+### output
+models
+
+### using the function created above, we are able to identify the 15 top variables (w/factor levels that contribute to monthly income)
+get_model_formula(15, models, "monthly_income")
+
+### using that output, we create this linear model to compare with the rest of the models
 leaps_mod_2 <- lm(monthly_income ~ business_travel + daily_rate + department + 
                     + job_level + job_role + job_role  + 
                     job_role + monthly_rate + total_working_years + 
                     years_since_last_promotion + years_with_curr_manager, data = work)
 
+### evaluate model
+sqrt(mean(leaps_mod_2$residuals^2))
+ols_regress(leaps_mod_2)
+ols_press(leaps_mod_2)
+ols_aic(leaps_mod_2)
+ols_mallows_cp(leaps_mod_2, fit)
 ### rmse = 1038.094
+### adj. r2 = 0.948
+### PRESS: 976,591,613
+### AIC: 14593.5
+```
 
+
+```{r Stepwise selection - No Salary}
 ols_step_both_p(mi_lm_2, pent = 0.01, prem = 0.01, details = TRUE)
 stepwise_mod <- lm(monthly_income~ job_level + job_role + total_working_years + business_travel, data = work)
+
+### evaluate model
 ols_press(leaps_mod_2)
-### PRESS: 983282198
 ols_coll_diag(stepwise_mod)
 ols_aic(stepwise_mod)
 ols_regress(stepwise_mod)
 sqrt(mean(stepwise_mod$residuals^2))
+ols_mallows_cp(stepwise_mod, fit)
+### PRESS: 983,282,198
 ### RMSE: 1048.192
 ### adj. r2 : .947
 ### AIC: 14598.34
 
+### test stepwise model with training data
 stepwise_mod <- lm(monthly_income~ job_level + job_role + total_working_years + business_travel, data = work_model_Train)
 pred <- predict.lm(stepwise_mod, newdata = work_model_Test, type = 'response')
 error <- work_model_Test$monthly_income-pred
 rmse <- sqrt(mean(error^2))
 rmse
 #### train/test RMSE: 1049.652
-AIC(stepwise_mod)
+AIC(stepwise_model)
 ### AIC: 10951.16
+```
+
+
+```{r Comparing models}
+### By using Mallow's Cp, adjusted r^2, AIC, and PRESS in conjunction as metrics, we can feel confident in our model selection of best fit.
+
+tribble(
+  ~Name, ~MallowsCp, ~ adjr2, ~AIC, ~PRESS,
+  "forward_mod", -4.608704, 0.947, 14598.34, 983282198,
+  "leaps_mod_2", -11.01006, 0.948, 14593.5, 976591613,
+  "stepwise_mod", -4.608704, 0.947, 14598.34, 983282198,
+)
 
 
 ```
 
 
-```{r predictions for no salary dataset}
 
-mi_lm_2 <- lm(monthly_income~., data = work)
-sqrt(mean(mi_lm_2$residuals^2))
+```{r Predictions for no salary dataset}
 
 ### load no salary data set
 no_salary <- read.csv("https://raw.githubusercontent.com/j-dominguez9/Case-Study-2/main/CaseStudy2CompSet%20No%20Salary.csv")
