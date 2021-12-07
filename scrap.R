@@ -549,4 +549,17 @@ library(leaps)
 summary(leaps::regsubsets(attrition~., data = work, method = 'exhaustive'))
 ?regsubsets()
 
-
+test_model <- glm(attrition~., data = work, family = 'binomial', maxit = 100)
+att_imp_vars <- varImp(test_model) %>% as.data.frame()
+att_imp_vars %>% names(att_imp_vars)[1] = "Name"
+att_imp_vars[[1]]
+df_att_rank <- data.frame(Name = c("age", "business_travelTravel_Frequently", "business_travelNon-Travel", 'daily_rate', 'departmentResearch&Development', 'departmentSales', 'distance_from_home', 'education', 'education_fieldLife_Sciences', 'education_fieldMarketing', 'education_fieldMedical', 'education_fieldOther', 'education_fieldTechnical_Degree', 'environment_satisfaction', 'genderMale', 'hourly_rate', 'job_involvement', 'job_level', 'job_roleHuman_Resources', 'job_roleLaboratory Technician', 'job_roleManager', 'job_roleManufacturing_Director', 'job_roleResearch_Director', 'job_roleResearch_Scientist', 'job_roleSales Executive', 'job_roleSales Representative', 'job_satisfaction', 'marital_statusMarried', 'marital_statusSingle', 'monthly_income', 'monthly_rate', 'num_companies_worked', 'over_timeYes', 'percent_salary_hike', 'performance_rating', 'relationship_satisfaction', 'stock_option_level', 'total_working_years', 'training_times_last_year', 'work_life_balance', 'years_at_company', 'years_in_current_role', 'years_since_last_promotion', 'years_with_curr_manager', 'att_factor1'), Overall = att_imp_vars$Overall)
+df_att_rank %>% arrange(desc(Overall))
+olsrr::ols_step_forward_p(test_model, penter = 0.05, details = TRUE)
+olsrr::ols_step_best_subset(mi_lm_2)
+lp_mod <- summary(regsubsets(monthly_income~., data = work, nvmax = 15))
+data.frame(
+  Adj.R2 = which.max(lp_mod$adjr2),
+  CP = which.min(lp_mod$cp),
+  BIC = which.min(lp_mod$bic)
+)
