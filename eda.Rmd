@@ -25,6 +25,7 @@ library(plyr)
 library(class)
 library(caret)
 library(e1071)
+library(olsrr)
 work <- read_csv(file.choose())
 head(work)
 
@@ -491,28 +492,83 @@ work_model_test2 <- work_model_Test %>% select(everything(), -monthly_income)
 colnames(work_model_Test)
 
 
-mi_lm <- lm(monthly_income~., data = work_model_Train)
-sqrt(mean(mi_lm$residuals^2))
-mi_lm_2 <- lm(monthly_income~., data = work)
-sqrt(mean(mi_lm_2$residuals^2))
-no_salary <- read.csv(file.choose())
-is.data.frame(no_salary)
-predict(mi_lm_2, newdata = no_salary)
-no_salary <- no_salary %>% janitor::clean_names()
-no_salary$employee_count <- NULL
-no_salary$over18 <- NULL
-no_salary$standard_hours <- NULL
-no_salary<- NULL
-no_salary$employee_number <- NULL
-predict <- predict.lm(mi_lm, newdata = work_model_Test, type = 'response')
-error <- work_model_Test$monthly_income-predict
-rmse <- sqrt(mean(error^2))
-rmse
 
 install.packages("olsrr")
 library(olsrr)
 olsrr::ols_step_forward_p(mi_lm_2, penter = 0.05, details = TRUE)
 xyz <- lm(monthly_income~job_level +  job_role + total_working_years + business_travel, data = work)
 sqrt(mean(xyz$residuals^2))
+### rmse = 1048
+
+
+
+leaps_mod_2 <- lm(monthly_income ~ business_travel + daily_rate + department + 
+                    + job_level + job_role + job_role  + 
+                    job_role + monthly_rate + total_working_years + 
+                    years_since_last_promotion + years_with_curr_manager, data = work)
+
+### rmse = 1038.094
+
+ols_step_both_p(mi_lm_2, pent = 0.01, prem = 0.01, details = TRUE)
+stepwise_mod <- lm(monthly_income~ job_level + job_role + total_working_years + business_travel, data = work)
+ols_press(leaps_mod_2)
+### PRESS: 983282198
+ols_coll_diag(stepwise_mod)
+ols_aic(stepwise_mod)
+ols_regress(stepwise_mod)
+sqrt(mean(stepwise_mod$residuals^2))
+### RMSE: 1048.192
+### adj. r2 : .947
+### AIC: 14598.34
+
+stepwise_mod <- lm(monthly_income~ job_level + job_role + total_working_years + business_travel, data = work_model_Train)
+pred <- predict.lm(stepwise_mod, newdata = work_model_Test, type = 'response')
+error <- work_model_Test$monthly_income-pred
+rmse <- sqrt(mean(error^2))
+rmse
+#### train/test RMSE: 1049.652
+AIC(stepwise_mod)
+### AIC: 10951.16
+
+
+```
+
+
+```{r predictions for no salary dataset}
+
+mi_lm_2 <- lm(monthly_income~., data = work)
+sqrt(mean(mi_lm_2$residuals^2))
+
+### load no salary data set
+no_salary <- read.csv("https://raw.githubusercontent.com/j-dominguez9/Case-Study-2/main/CaseStudy2CompSet%20No%20Salary.csv")
+
+### format data set to match training set
+no_salary <- no_salary %>% janitor::clean_names()
+no_salary$employee_count <- NULL
+no_salary$over18 <- NULL
+no_salary$standard_hours <- NULL
+no_salary$employee_number <- NULL
+
+#set relevant variables as factors
+is.factor(no_salary$over_time)
+no_salary$department <- as.factor(no_salary$department)
+no_salary$education_field <- as.factor(no_salary$education_field)
+no_salary$gender <- as.factor(no_salary$gender)
+no_salary$marital_status <- as.factor(no_salary$marital_status)
+no_salary$over_time <- as.factor(no_salary$over_time)
+
+### clean level names of factor variables
+no_salary$education_field <- recode_factor(no_salary$education_field,"Human Resources" = 'human_resources',"Marketing" = 'marketing', "Medical" = 'medical',"Other" = 'other', "Technical Degree" = 'technical_degree', "Life Sciences" = 'life_sciences')
+levels(no_salary$education_field)
+no_salary$department <- recode_factor(no_salary$department, "Human Resources" = 'human_resources', "Research & Development" = 'research_and_development', "Sales" = 'sales')
+levels(no_salary$department)
+no_salary$job_role <- recode_factor(no_salary$job_role, "Healthcare Representative" = 'healthcare_representative', "Human Resources" = 'human_resources', "Laboratory Technician" = 'laboratory_technician', "Manager" = 'manager', "Manufacturing Director" = 'manufacturing_director', "Research Director" = 'research_director', "Research Scientist" = 'research_scientist', "Sales Executive" = 'sales_executive', "Sales Representative" = 'sales_representative')
+levels(no_salary$job_role)
+
+
+### create predictions
+pred <- predict.lm(leaps_mod_2, newdata = no_salary, type = 'response')
+no_sal_pred <- data.frame(ID = no_salary$id, MonthlyIncome = pred)
+head(no_sal_pred)
 ```
 
