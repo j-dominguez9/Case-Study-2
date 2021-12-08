@@ -1,5 +1,5 @@
 ---
-title: "case_study_2"
+title: "Case Study 2"
 author: "Joaquin Dominguez"
 date: "11/29/2021"
 output: html_document
@@ -9,31 +9,30 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r input data}
+### Load libraries
+```{r input data, message = FALSE}
 library(tidyverse)
 library(janitor)
 library(arules)
 library(aod)
 library(AICcmodavg)
-library(plyr)
+library(dplyr)
 library(class)
 library(caret)
 library(e1071)
 library(olsrr)
 library(leaps)
 library(tibble)
-work <- read_csv(file.choose())
+work <- read_csv("https://raw.githubusercontent.com/j-dominguez9/Case-Study-2/main/CaseStudy2-data.csv")
 head(work)
 
 ```
 
-
+### Cleaning Data: 
+#### - remove columns that have no practical association with attrition and monthly income\
+#### - change attrition values to 0 and 1\
+#### - recode factor levels with snake case names\
 
 
 ```{r clean data}
@@ -43,81 +42,108 @@ work$over18 <- NULL
 work$standard_hours <- NULL
 work$id <- NULL
 work$employee_number <- NULL
+work <- work %>% mutate(attrition = if_else(attrition == "No", 0, 1))
+head(work)
+
+work$department <- as.factor(work$department)
+work$education_field <- as.factor(work$education_field)
+work$gender <- as.factor(work$gender)
+work$marital_status <- as.factor(work$marital_status)
+work$over_time <- as.factor(work$over_time)
+
+levels(work$education_field)
+work$education_field <- recode_factor(work$education_field,"Human Resources" = 'human_resources',"Marketing" = 'marketing', "Medical" = 'medical',"Other" = 'other', "Technical Degree" = 'technical_degree', "Life Sciences" = 'life_sciences')
+levels(work$education_field)
+levels(work$department)
+work$department <- recode_factor(work$department, "Human Resources" = 'human_resources', "Research & Development" = 'research_and_development', "Sales" = 'sales')
+levels(work$job_role)
+work$job_role <- recode_factor(work$job_role, "Healthcare Representative" = 'healthcare_representative', "Human Resources" = 'human_resources', "Laboratory Technician" = 'laboratory_technician', "Manager" = 'manager', "Manufacturing Director" = 'manufacturing_director', "Research Director" = 'research_director', "Research Scientist" = 'research_scientist', "Sales Executive" = 'sales_executive', "Sales Representative" = 'sales_representative')
 
 ```
-
+### Exploratory Data Analysis
+#### - Create graphs for each variable against attrition
+#### - Divide into "internal" and "external" variables
+#### - Set 30% attrition rate for a level of a variable as significant
 
 ```{r education field}
 ### External, not significant
+
 total <- work %>% select(education_field, attrition) %>% 
   group_by(education_field) %>% arrange(education_field) %>% 
-  count(education_field) %>% as.data.frame()
+  dplyr::count(education_field) %>% as.data.frame()
+
 yes_count <- work %>% select(education_field, attrition) %>% 
   group_by(education_field) %>% arrange(education_field) %>% 
-  filter(attrition == "1") %>% count(education_field) %>% 
-  rename(yes = n) %>% as.data.frame()
+  filter(attrition == "1") %>% dplyr::count(education_field) %>%
+  dplyr::rename(yes = n) %>% as.data.frame()
+
 head(yes_count)
 head(total)
+
 join <- full_join(total, yes_count, by = "education_field") %>% mutate(perc = (yes/n)*100)
 join$education_field <- as.factor(join$education_field)
 head(join)
-join %>% ggplot(aes(x = education_field, y = perc)) + geom_bar(stat = 'identity')
+join %>% ggplot(aes(x = education_field, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Education Field and Attrition")
 ```
 
 
 ```{r age}
 ### external, significant
-work <- work %>% mutate(attrition = if_else(attrition == "No", 0, 1))
-total <- work %>% select(age, attrition) %>% group_by(age) %>% arrange(age) %>% count(age) %>% as.data.frame()
-yes_count <- work %>% select(age, attrition) %>% group_by(age) %>% arrange(age) %>% filter(attrition == "1") %>% count(age) %>% rename(yes = n) %>% as.data.frame()
+total <- work %>% mutate(age = discretize(age, method = 'interval', breaks = 6)) %>% select(age, attrition) %>% group_by(age) %>% arrange(age) %>% dplyr::count(age) %>% as.data.frame()
+
+yes_count <- work %>% mutate(age = discretize(age, method = 'interval', breaks = 6)) %>% select(age, attrition) %>% group_by(age) %>% arrange(age) %>% filter(attrition == "1") %>% dplyr::count(age) %>% dplyr::rename(yes = n) %>% as.data.frame()
+
+head(total)
+head(yes_count)
+
 join <- full_join(total, yes_count, by = "age")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = age, y = perc)) + geom_bar(stat = 'identity')
-
-fit = aov(attrition~age, data = work)
-summary(fit)
-
-work.age <- aggregate(x = work$attrition, by = list(cut(work$age, 7)), mean)
-names(work.age) <- c("age", "attrition")
-work.age
-work.age %>% ggplot(aes(x = age, y = attrition)) + geom_bar(stat = 'identity')
+join %>% ggplot(aes(x = age, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Age and Attrition")
 ```
 
 
 ```{r business travel}
 ### internal, not significant
 total <- work %>% select(attrition, business_travel) %>% group_by(business_travel) %>% arrange(business_travel) %>% count(business_travel) %>% as.data.frame()
+
 yes_count <- work %>% select(business_travel, attrition) %>% group_by(business_travel) %>% arrange(business_travel) %>% filter(attrition == "1") %>% count(business_travel) %>% rename(yes = n) %>% as.data.frame()
+
 head(total)
 yes_count
+
 join <- full_join(total, yes_count, by = "business_travel")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = business_travel, y = perc)) + geom_bar(stat = 'identity')
+join %>% ggplot(aes(x = business_travel, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Business Travel and Attrition")
 ```
 
 
 ```{r department}
 ### internal, not significant
 total <- work %>% select(attrition, department) %>% group_by(department) %>% arrange(department) %>% count(department) %>% as.data.frame()
+
 yes_count <- work %>% select(department, attrition) %>% group_by(department) %>% arrange(department) %>% filter(attrition == "1") %>% count(department) %>% rename(yes = n) %>% as.data.frame()
+
 head(total)
 yes_count
+
 join <- full_join(total, yes_count, by = "department")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = department, y = perc)) + geom_bar(stat = 'identity')
+join %>% ggplot(aes(x = department, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Department and Attrition")
 ```
 
 
 ```{r distance from home}
 ### external, significant
-total <- work %>% select(attrition, distance_from_home) %>% mutate(distance_from_home = discretize(distance_from_home, method = 'interval', breaks = 6)) %>% group_by(distance_from_home) %>% arrange(distance_from_home) %>% count(distance_from_home) %>% as.data.frame()
-yes_count <- work %>% select(distance_from_home, attrition) %>% mutate(distance_from_home = discretize(distance_from_home, method = 'interval', breaks = 6)) %>% filter(attrition == "1") %>% group_by(distance_from_home) %>% arrange(distance_from_home) %>% count(distance_from_home) %>% rename(yes = n) %>% as.data.frame()
+total <- work %>% select(attrition, distance_from_home) %>% mutate(distance_from_home = discretize(distance_from_home, method = 'interval', breaks = 6)) %>% group_by(distance_from_home) %>% arrange(distance_from_home) %>% dplyr::count(distance_from_home) %>% as.data.frame()
+
+yes_count <- work %>% select(distance_from_home, attrition) %>% mutate(distance_from_home = discretize(distance_from_home, method = 'interval', breaks = 6)) %>% filter(attrition == "1") %>% group_by(distance_from_home) %>% arrange(distance_from_home) %>% dplyr::count(distance_from_home) %>% dplyr::rename(yes = n) %>% as.data.frame()
+
 head(total)
-yes_count
-range(work$distance_from_home)
+head(yes_count)
+
 join <- full_join(total, yes_count, by = "distance_from_home")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = distance_from_home, y = perc)) + geom_bar(stat = 'identity')
+join %>% ggplot(aes(x = distance_from_home, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Distance From Home and Attrition")
 ```
 
 
@@ -125,24 +151,30 @@ join %>% ggplot(aes(x = distance_from_home, y = perc)) + geom_bar(stat = 'identi
 ```{r education}
 ### external, not significant
 total <- work %>% select(attrition, education) %>% group_by(education) %>% arrange(education) %>% count(education) %>% as.data.frame()
+
 yes_count <- work %>% select(education, attrition) %>% group_by(education) %>% arrange(education) %>% filter(attrition == "1") %>% count(education) %>% rename(yes = n) %>% as.data.frame()
+
 head(total)
 yes_count
+
 join <- full_join(total, yes_count, by = "education")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = education, y = perc)) + geom_bar(stat = 'identity')
+join %>% ggplot(aes(x = education, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Education and Attrition")
 ```
 
 
 ```{r environment satisfaction}
 ### internal, not significant
 total <- work %>% select(attrition, environment_satisfaction) %>% group_by(environment_satisfaction) %>% arrange(environment_satisfaction) %>% count(environment_satisfaction) %>% as.data.frame()
+
 yes_count <- work %>% select(environment_satisfaction, attrition) %>% group_by(environment_satisfaction) %>% arrange(environment_satisfaction) %>% filter(attrition == "1") %>% count(environment_satisfaction) %>% rename(yes = n) %>% as.data.frame()
+
 head(total)
 yes_count
+
 join <- full_join(total, yes_count, by = "environment_satisfaction")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = environment_satisfaction, y = perc)) + geom_bar(stat = 'identity')
+join %>% ggplot(aes(x = environment_satisfaction, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Environment Satisfaction and Attrition")
 
 ```
 
@@ -151,23 +183,29 @@ join %>% ggplot(aes(x = environment_satisfaction, y = perc)) + geom_bar(stat = '
 ```{r gender}
 ### external, not significant
 total <- work %>% select(attrition, gender) %>% group_by(gender) %>% arrange(gender) %>% count(gender) %>% as.data.frame()
+
 yes_count <- work %>% select(gender, attrition) %>% group_by(gender) %>% arrange(gender) %>% filter(attrition == "1") %>% count(gender) %>% rename(yes = n) %>% as.data.frame()
+
 head(total)
 yes_count
+
 join <- full_join(total, yes_count, by = "gender")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = gender, y = perc)) + geom_bar(stat = 'identity')
+join %>% ggplot(aes(x = gender, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Gender and Attrition")
 ```
 
 ```{r hourly rate}
 ### internal, not significant
 total <- work %>% select(attrition, hourly_rate) %>% mutate(hourly_rate = discretize(hourly_rate, method = 'interval', breaks = 10)) %>% group_by(hourly_rate) %>% arrange(hourly_rate) %>% count(hourly_rate) %>% as.data.frame()
+
 yes_count <- work %>% select(hourly_rate, attrition) %>% mutate(hourly_rate = discretize(hourly_rate, method = 'interval', breaks = 10)) %>% filter(attrition == "1") %>% group_by(hourly_rate) %>% arrange(hourly_rate) %>% count(hourly_rate) %>% rename(yes = n) %>% as.data.frame()
+
 head(total)
 yes_count
+
 join <- full_join(total, yes_count, by = "hourly_rate")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = hourly_rate, y = perc)) + geom_bar(stat = 'identity')
+join %>% ggplot(aes(x = hourly_rate, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Hourly Rate and Attrition")
 
 ```
 
@@ -175,34 +213,43 @@ join %>% ggplot(aes(x = hourly_rate, y = perc)) + geom_bar(stat = 'identity')
 ```{r job involvement}
 ### internal, super significant
 total <- work %>% select(attrition, job_involvement) %>% group_by(job_involvement) %>% arrange(job_involvement) %>% count(job_involvement) %>% as.data.frame()
+
 yes_count <- work %>% select(job_involvement, attrition) %>% group_by(job_involvement) %>% arrange(job_involvement) %>% filter(attrition == "1") %>% count(job_involvement) %>% rename(yes = n) %>% as.data.frame()
+
 head(total)
 yes_count
+
 join <- full_join(total, yes_count, by = "job_involvement")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = job_involvement, y = perc)) + geom_bar(stat = 'identity')
+join %>% ggplot(aes(x = job_involvement, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Job Involvement and Attrition")
 ```
 
 ```{r job level}
 ### internal, not significant
 total <- work %>% select(attrition, job_level) %>% group_by(job_level) %>% arrange(job_level) %>% count(job_level) %>% as.data.frame()
+
 yes_count <- work %>% select(job_level, attrition) %>% group_by(job_level) %>% arrange(job_level) %>% filter(attrition == "1") %>% count(job_level) %>% rename(yes = n) %>% as.data.frame()
+
 head(total)
 yes_count
+
 join <- full_join(total, yes_count, by = "job_level")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = job_level, y = perc)) + geom_bar(stat = 'identity')
+join %>% ggplot(aes(x = job_level, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Job Level and Attrition")
 ```
 
 ```{r job role}
 ### internal, worth investigating
 total <- work %>% select(attrition, job_role) %>% group_by(job_role) %>% arrange(job_role) %>% count(job_role) %>% as.data.frame()
+
 yes_count <- work %>% select(job_role, attrition) %>% group_by(job_role) %>% arrange(job_role) %>% filter(attrition == "1") %>% count(job_role) %>% rename(yes = n) %>% as.data.frame()
+
 head(total)
 yes_count
+
 join <- full_join(total, yes_count, by = "job_role")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = job_role, y = perc)) + geom_bar(stat = 'identity') + coord_flip()
+join %>% ggplot(aes(x = job_role, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + coord_flip() + ggtitle("Job Role and Attrition")
 ```
 
 ```{r job satisfaction}
@@ -213,7 +260,7 @@ head(total)
 yes_count
 join <- full_join(total, yes_count, by = "job_satisfaction")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = job_satisfaction, y = perc)) + geom_bar(stat = 'identity')
+join %>% ggplot(aes(x = job_satisfaction, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Job Satisfaction and Attrition")
 ```
 
 ```{r marital status}
@@ -224,7 +271,7 @@ head(total)
 yes_count
 join <- full_join(total, yes_count, by = "marital_status")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = marital_status, y = perc)) + geom_bar(stat = 'identity')
+join %>% ggplot(aes(x = marital_status, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Marital Status and Attrition")
 ```
 
 
@@ -242,18 +289,21 @@ yes_count
 join <- full_join(total, yes_count, by = "monthly_income")
 join
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = monthly_income, y = perc)) + geom_bar(stat = 'identity') + coord_flip()
+join %>% ggplot(aes(x = monthly_income, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + coord_flip() + ggtitle("Income and Attrition")
 ```
 
 ```{r num of companies worked}
 ### external, not significant
 total <- work %>% select(attrition, num_companies_worked) %>% group_by(num_companies_worked) %>% arrange(num_companies_worked) %>% count(num_companies_worked) %>% as.data.frame()
+
 yes_count <- work %>% select(num_companies_worked, attrition) %>% group_by(num_companies_worked) %>% arrange(num_companies_worked) %>% filter(attrition == "1") %>% count(num_companies_worked) %>% rename(yes = n) %>% as.data.frame()
+
 head(total)
 yes_count
+
 join <- full_join(total, yes_count, by = "num_companies_worked")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = num_companies_worked, y = perc)) + geom_bar(stat = 'identity')
+join %>% ggplot(aes(x = num_companies_worked, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Number of Companies Worked and Attrition")
 ```
 
 ```{r over time}
@@ -264,139 +314,147 @@ head(total)
 yes_count
 join <- full_join(total, yes_count, by = "over_time")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = over_time, y = perc)) + geom_bar(stat = 'identity')
+join %>% ggplot(aes(x = over_time, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Over Time and Attrition")
 ```
 
 ```{r percent salary hike}
 ### internal, significant
 total <- work %>% select(attrition, percent_salary_hike) %>% group_by(percent_salary_hike) %>% arrange(percent_salary_hike) %>% count(percent_salary_hike) %>% as.data.frame()
+
 yes_count <- work %>% select(percent_salary_hike, attrition) %>% group_by(percent_salary_hike) %>% arrange(percent_salary_hike) %>% filter(attrition == "1") %>% count(percent_salary_hike) %>% rename(yes = n) %>% as.data.frame()
+
 head(total)
 yes_count
+
 join <- full_join(total, yes_count, by = "percent_salary_hike")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = percent_salary_hike, y = perc)) + geom_bar(stat = 'identity')
+join %>% ggplot(aes(x = percent_salary_hike, y = perc)) + geom_bar(stat = 'identity',  fill = 'skyblue4') + theme_minimal() + ggtitle("Percent Salary Hike and Attrition")
 ```
 
 ```{r performance rating}
 ### internal, not significant
 total <- work %>% select(attrition, performance_rating) %>% group_by(performance_rating) %>% arrange(performance_rating) %>% count(performance_rating) %>% as.data.frame()
+
 yes_count <- work %>% select(performance_rating, attrition) %>% group_by(performance_rating) %>% arrange(performance_rating) %>% filter(attrition == "1") %>% count(performance_rating) %>% rename(yes = n) %>% as.data.frame()
+
 head(total)
 yes_count
+
 join <- full_join(total, yes_count, by = "performance_rating")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = performance_rating, y = perc)) + geom_bar(stat = 'identity')
+join %>% ggplot(aes(x = performance_rating, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') +  theme_minimal() + ggtitle("Performance Rating and Attrition")
 
 ```
 
 ```{r relationship satisfaction}
 ### external, not significant
 total <- work %>% select(attrition, relationship_satisfaction) %>% group_by(relationship_satisfaction) %>% arrange(relationship_satisfaction) %>% count(relationship_satisfaction) %>% as.data.frame()
+
 yes_count <- work %>% select(relationship_satisfaction, attrition) %>% group_by(relationship_satisfaction) %>% arrange(relationship_satisfaction) %>% filter(attrition == "1") %>% count(relationship_satisfaction) %>% rename(yes = n) %>% as.data.frame()
+
 head(total)
 yes_count
 join <- full_join(total, yes_count, by = "relationship_satisfaction")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = relationship_satisfaction, y = perc)) + geom_bar(stat = 'identity')
+join %>% ggplot(aes(x = relationship_satisfaction, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Relationship Satisfaction and Attrition")
 ```
 
 ```{r stock option level}
 ### internal, not significant
 total <- work %>% select(attrition, stock_option_level) %>% group_by(stock_option_level) %>% arrange(stock_option_level) %>% count(stock_option_level) %>% as.data.frame()
+
 yes_count <- work %>% select(stock_option_level, attrition) %>% group_by(stock_option_level) %>% arrange(stock_option_level) %>% filter(attrition == "1") %>% count(stock_option_level) %>% rename(yes = n) %>% as.data.frame()
+
 head(total)
 yes_count
 join <- full_join(total, yes_count, by = "stock_option_level")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = stock_option_level, y = perc)) + geom_bar(stat = 'identity')
+join %>% ggplot(aes(x = stock_option_level, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Stock Option Level and Attrition")
 ```
 
 ```{r total working years}
 ### external, worth exploring
-total <- work %>% select(attrition, total_working_years) %>% 
-  mutate(total_working_years = discretize(total_working_years, method = 'interval', breaks = 5)) %>% 
-  group_by(total_working_years) %>% arrange(total_working_years) %>% count(total_working_years) %>% 
-  as.data.frame()
+total <- work %>% select(attrition, total_working_years) %>% mutate(total_working_years = discretize(total_working_years, method = 'interval', breaks = 5)) %>% group_by(total_working_years) %>% arrange(total_working_years) %>% count(total_working_years) %>% as.data.frame()
+
 yes_count <- work %>% select(total_working_years, attrition) %>% filter(attrition == "1") %>% 
-  mutate(total_working_years = discretize(total_working_years, method = 'interval', breaks = 5)) %>% 
-  group_by(total_working_years) %>% arrange(total_working_years) %>% filter(attrition == "1") %>% 
-  count(total_working_years) %>% rename(yes = n) %>% as.data.frame()
+  mutate(total_working_years = discretize(total_working_years, method = 'interval', breaks = 5)) %>% group_by(total_working_years) %>% arrange(total_working_years) %>% filter(attrition == "1") %>% dplyr::count(total_working_years) %>% dplyr::rename(yes = n) %>% as.data.frame()
+
 head(total)
 yes_count
+
 join <- full_join(total, yes_count, by = "total_working_years")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = total_working_years, y = perc)) + geom_bar(stat = 'identity')
+join %>% ggplot(aes(x = total_working_years, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Total Working Years and Attrition")
 ```
 
 ```{r training times last year}
 ### internal?, not significant
 total <- work %>% select(attrition, training_times_last_year) %>% group_by(training_times_last_year) %>% arrange(training_times_last_year) %>% count(training_times_last_year) %>% as.data.frame()
+
 yes_count <- work %>% select(training_times_last_year, attrition) %>% group_by(training_times_last_year) %>% arrange(training_times_last_year) %>% filter(attrition == "1") %>% count(training_times_last_year) %>% rename(yes = n) %>% as.data.frame()
+
 head(total)
 yes_count
+
 join <- full_join(total, yes_count, by = "training_times_last_year")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = training_times_last_year, y = perc)) + geom_bar(stat = 'identity')
+join %>% ggplot(aes(x = training_times_last_year, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Training Times Last Year and Attrition")
 ```
 
 ```{r work life balance}
 ### internal/external, significant
 total <- work %>% select(attrition, work_life_balance) %>% group_by(work_life_balance) %>% arrange(work_life_balance) %>% count(work_life_balance) %>% as.data.frame()
+
 yes_count <- work %>% select(work_life_balance, attrition) %>% group_by(work_life_balance) %>% arrange(work_life_balance) %>% filter(attrition == "1") %>% count(work_life_balance) %>% rename(yes = n) %>% as.data.frame()
+
 head(total)
 yes_count
+
 join <- full_join(total, yes_count, by = "work_life_balance")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = work_life_balance, y = perc)) + geom_bar(stat = 'identity')
+join %>% ggplot(aes(x = work_life_balance, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Work Life Balance and Attrition")
 ```
 
 ```{r years at company}
 ### external, not significant
-total <- work %>% select(attrition, years_at_company) %>% 
-  mutate(years_at_company = discretize(years_at_company, method = 'interval', breaks = 4)) %>% 
-  group_by(years_at_company) %>% arrange(years_at_company) %>% count(years_at_company) %>% as.data.frame()
-yes_count <- work %>% select(years_at_company, attrition) %>% 
-  mutate(years_at_company = discretize(years_at_company, method = 'interval', breaks = 4)) %>% 
-  filter(attrition == "1") %>% group_by(years_at_company) %>% arrange(years_at_company) %>% 
-  count(years_at_company) %>% rename(yes = n) %>% as.data.frame()
+total <- work %>% select(attrition, years_at_company) %>% mutate(years_at_company = discretize(years_at_company, method = 'interval', breaks = 4)) %>% group_by(years_at_company) %>% arrange(years_at_company) %>% count(years_at_company) %>% as.data.frame()
+
+yes_count <- work %>% select(years_at_company, attrition) %>% mutate(years_at_company = discretize(years_at_company, method = 'interval', breaks = 4)) %>% filter(attrition == "1") %>% group_by(years_at_company) %>% arrange(years_at_company) %>% count(years_at_company) %>% rename(yes = n) %>% as.data.frame()
+
 head(total)
 yes_count
+
 join <- full_join(total, yes_count, by = "years_at_company")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = years_at_company, y = perc)) + geom_bar(stat = 'identity')
+join %>% ggplot(aes(x = years_at_company, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Years at Company and Attrition")
 ```
 
 ```{r years in current role}
 ### external, not significant
-total <- work %>% select(attrition, years_in_current_role) %>% 
-  mutate(years_in_current_role = discretize(years_in_current_role, method = 'interval', breaks = 6)) %>% 
-  group_by(years_in_current_role) %>% arrange(years_in_current_role) %>% count(years_in_current_role) %>% as.data.frame()
-yes_count <- work %>% select(years_in_current_role, attrition) %>% 
-  mutate(years_in_current_role = discretize(years_in_current_role, method = 'interval', breaks = 6)) %>% 
-  filter(attrition == "1") %>% group_by(years_in_current_role) %>% arrange(years_in_current_role) %>% 
-  count(years_in_current_role) %>% rename(yes = n) %>% as.data.frame()
+total <- work %>% select(attrition, years_in_current_role) %>% mutate(years_in_current_role = discretize(years_in_current_role, method = 'interval', breaks = 6)) %>% group_by(years_in_current_role) %>% arrange(years_in_current_role) %>% count(years_in_current_role) %>% as.data.frame()
+
+yes_count <- work %>% select(years_in_current_role, attrition) %>% mutate(years_in_current_role = discretize(years_in_current_role, method = 'interval', breaks = 6)) %>% filter(attrition == "1") %>% group_by(years_in_current_role) %>% arrange(years_in_current_role) %>% count(years_in_current_role) %>% rename(yes = n) %>% as.data.frame()
+
 head(total)
 yes_count
+
 join <- full_join(total, yes_count, by = "years_in_current_role")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = years_in_current_role, y = perc)) + geom_bar(stat = 'identity')
+join %>% ggplot(aes(x = years_in_current_role, y = perc)) + geom_bar(stat = 'identity', fill =  'skyblue4') + theme_minimal() + ggtitle("Years in Current Role")
 ```
 
 ```{r years since last promotion}
 ### internal, not significant
-total <- work %>% select(attrition, years_since_last_promotion) %>% 
-  mutate(years_since_last_promotion = discretize(years_since_last_promotion, method = 'interval', breaks = 5)) %>% 
-  group_by(years_since_last_promotion) %>% arrange(years_since_last_promotion) %>% count(years_since_last_promotion) %>% as.data.frame()
-yes_count <- work %>% select(years_since_last_promotion, attrition) %>% 
-  mutate(years_since_last_promotion = discretize(years_since_last_promotion, method = 'interval', breaks = 5)) %>% 
-  filter(attrition == "1") %>% group_by(years_since_last_promotion) %>% arrange(years_since_last_promotion) %>% 
-  count(years_since_last_promotion) %>% rename(yes = n) %>% as.data.frame()
+total <- work %>% select(attrition, years_since_last_promotion) %>% mutate(years_since_last_promotion = discretize(years_since_last_promotion, method = 'interval', breaks = 5)) %>% group_by(years_since_last_promotion) %>% arrange(years_since_last_promotion) %>% count(years_since_last_promotion) %>% as.data.frame()
+
+yes_count <- work %>% select(years_since_last_promotion, attrition) %>% mutate(years_since_last_promotion = discretize(years_since_last_promotion, method = 'interval', breaks = 5)) %>% filter(attrition == "1") %>% group_by(years_since_last_promotion) %>% arrange(years_since_last_promotion) %>% count(years_since_last_promotion) %>% rename(yes = n) %>% as.data.frame()
+
 head(total)
 yes_count
+
 join <- full_join(total, yes_count, by = "years_since_last_promotion")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = years_since_last_promotion, y = perc)) + geom_bar(stat = 'identity')
+join %>% ggplot(aes(x = years_since_last_promotion, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Years Since Last Promotion")
 ```
 
 ```{r yrs with current manager}
@@ -412,10 +470,36 @@ head(total)
 yes_count
 join <- full_join(total, yes_count, by = "years_with_curr_manager")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = years_with_curr_manager, y = perc)) + geom_bar(stat = 'identity')
+join %>% ggplot(aes(x = years_with_curr_manager, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Years with Current Manager and Attrition")
 ```
-### Used metric of considering "significant" only variables that contained at least one level with >30% of attrition.
-### Then used regression modeling to examine those variables using AIC model selection to choose top 3 contributors to attrition.
+
+
+## I. Top Factors Contributing to Attrition
+
+### Significance:
+#### Setting significance at >30% of attrition in at least one level (if factor)
+
+
+### Internal
+#### - Work/Life Balance
+#### - Percent Salary Hike
+#### - Overtime
+#### - Income
+#### - Job Involvement
+### Worth Exploring:
+#### - Job Satisfaction
+#### - Job Role
+
+### External
+#### - Work/Life Balance
+#### - Distance from Home
+#### - Age
+### Worth Exploring:
+#### - Total Working Years
+
+### Model Comparison:
+#### Used regression modeling to examine those variables using AIC model selection to choose top 3 contributors to attrition.
+#### Made all combinations and interactions for 3 variables to predict attrition
 
 ```{r model comparison}
 perc_sal_hike.mod <- glm(attrition ~ percent_salary_hike, data = work, family = 'binomial')
@@ -448,23 +532,42 @@ models <- list(over_time.mod, monthly_inc.mod, job_inv.mod, wlb.mod, psh.ji.mod,
 model.names <- c('over_time.mod', 'monthly_inc.mod', 'job_inv.mod', 'wlb.mod', 'psh.ji.mod', 'ot.mi.mod', 'ot.ji.mod', 'ot.wlb.mod', 'mi.ji.mod', 'mi.wlb.mod', 'ji.wlb.mod', 'mi.ot.int.mod', 'mi.ji.int.mod', 'mi.wlb.int.mod', 'ot.ji.wlb.mod', 'ot.ji.wlb.int.mod', 'ot.wlb.int.ji.mod', 'ot.ji.mi.mod', 'ot.ji.mi.int.mod', 'ot.ji.int.mi.mod')
 aictab(cand.set = models, modnames = model.names)
 
-
-### Output dictates that the top 3 variables are:
-### - over_time
-### - job involvement
-### - monthly_income
-### We used AIC model selection to distinguish among a set of possible models describing the relationship between over time, job involvement, monthly income, and attrition.The best-fit model, carrying 69% of the cumulative model weight, included every parameter with no interaction effects.
-
 ```
 
-```{r job role insight}
 
-### job satisfaaction by role
-js <- work %>% select(job_role, job_satisfaction) %>% group_by(job_role) %>% mutate(job_role = factor(job_role))
-js2 <- ddply(js, .(job_role), summarize, mean = mean(job_satisfaction))
-js2 %>% ggplot(aes(x = job_role, y = mean)) + geom_bar(stat = 'identity') + coord_flip()
+### Output dictates that the top 3 internal variables are:\
+#### - over_time\
+#### - job_involvement\
+#### - monthly_income\
 
 
+
+#### We used AIC model selection to distinguish among a set of possible models describing the\ relationship between over time, job involvement, monthly income, and attrition.The best-fit model,\ carrying 69% of the cumulative model weight, included every parameter with no interaction effects.\
+
+#### Our best model to predict attrition, thus is represented in the formula:\
+#### Attrition = β0 + β1over_time + β2job_involvement + β3monthly_income\
+
+
+
+
+## II. Job Role Insights
+#### In this next part, we'll examine job role specific trends.
+
+#### First, we wanted to investigate if there's any  disparity with respect to job satisfaction throughout job roles
+
+```{r job role insight - part 1}
+### job satisfaction by role
+js <- work %>% select(job_role, job_satisfaction) %>% group_by(job_role) %>% mutate(job_role = factor(job_role)) %>% summarize(mean(job_satisfaction)) %>% as.data.frame() %>% rename(average_job_satisfaction = 'mean(job_satisfaction)')
+js
+js %>% ggplot(aes(x = job_role, y = average_job_satisfaction)) + geom_bar(stat = 'identity', fill = 'skyblue4') + coord_flip() + theme_minimal() + ggtitle("Mean Job Satisfaction by Job Role") + labs(x = "Job Role", y  = "Average Job Satisfaction")
+```
+
+### Insight:
+#### Through visual inspection from the graph above, there doesn't appear to be a noticeable difference in job satisfaction by job role. Notwithstanding, healthcare representatives had the highest average job satisfaction with 2.83 and research director had the lowest with 2.49. Although there wasn't a notable difference between job roles, it is always recommendable to increase average job satisfaction across all job roles.
+
+#### Next, as we established earlier, over time is a top contributing factor to attrition, so we wanted to examine how over time percentages are represented across job roles.
+
+```{r job role insight - part 2}
 ### Roles with highest amount of overtime
 total <- work %>% select(job_role, over_time) %>% mutate(over_time = if_else(over_time == "No", 0, 1)) %>% 
   group_by(job_role) %>% arrange(job_role) %>% count(job_role) %>% as.data.frame()
@@ -475,43 +578,66 @@ yes_count <- work %>% select(job_role, over_time) %>%
 total
 yes_count
 join <- full_join(total, yes_count, by = 'job_role') %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = job_role, y = perc)) + geom_bar(stat = 'identity') + coord_flip()
-
+join
+join %>% ggplot(aes(x = job_role, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + coord_flip() + ggtitle("Percent of Over Time by Job Role") + labs(x = "Job Role", y = "Percent")
 ```
 
-```{r Format data set to prepare for analysis}
+#### In this case, there is a notable difference between job roles in over time. Manager role had the lowest percentage of over time with 19.6% and research scientist had the highest percentage of over time with 37.8%. In the interest of lowering attrition rates, especially among those roles with higher percentages, it is recommendable to limit over time.
 
-### identify and transform factor variables that are not currently classified as factors
-is.factor(work$over_time)
-work$department <- as.factor(work$department)
-work$education_field <- as.factor(work$education_field)
-work$gender <- as.factor(work$gender)
-work$marital_status <- as.factor(work$marital_status)
-work$over_time <- as.factor(work$over_time)
+#### Lastly, we wanted to examine elements of gender parity with respect to job roles. First, we looked at the distribution of monthly income between genders in each job role. Next, we examined job role occupancy by gender.
 
-### clean factor levels
-levels(work$education_field)
-work$education_field <- recode_factor(work$education_field,"Human Resources" = 'human_resources',"Marketing" = 'marketing', "Medical" = 'medical',"Other" = 'other', "Technical Degree" = 'technical_degree', "Life Sciences" = 'life_sciences')
-levels(work$education_field)
-levels(work$department)
-work$department <- recode_factor(work$department, "Human Resources" = 'human_resources', "Research & Development" = 'research_and_development', "Sales" = 'sales')
-levels(work$job_role)
-work$job_role <- recode_factor(work$job_role, "Healthcare Representative" = 'healthcare_representative', "Human Resources" = 'human_resources', "Laboratory Technician" = 'laboratory_technician', "Manager" = 'manager', "Manufacturing Director" = 'manufacturing_director', "Research Director" = 'research_director', "Research Scientist" = 'research_scientist', "Sales Executive" = 'sales_executive', "Sales Representative" = 'sales_representative')
+```{r job role instight - part 3ai}
+### Gender parity t-test with respect to monthly income
 
+mon_inc_male <- work %>% select(monthly_income, gender) %>% filter(gender == "Male")
+mon_inc_female <- work %>% select(monthly_income, gender) %>% filter(gender == "Female")
+t.test(mon_inc_male$monthly_income, mon_inc_female$monthly_income)
 ```
 
 
+#### First, we ran a t-test to establish whether across all job roles there was any difference in monthly income between male and female employees. At a 0.05 significance level, there is not enough evidence to suggest that there is any difference between male and female employees with respect to  monthly income (p-value = 0.1055, Welch Two sample t-test).
 
-```{r No Salary model preparation}
+
+
+```{r job role instight - part 3aii}
+work %>% select(gender, monthly_income, job_role) %>% ggplot(aes(x = job_role, y = monthly_income, color = gender, fill = gender)) + geom_bar(stat = 'identity', alpha = 0.9, position = 'dodge') + coord_flip() + theme_minimal() + ggtitle("Monthly Income Distribution by Job Role and Gender") + labs(x = "Job Role", y = "Monthly Income")
+```
+
+
+
+#### When adding the dimension of job roles, this finding seems to hold for most, as can be noted in the graph. Research Directors, Managers, Manufacturing Directors, Healthcare Representatives have almost no noticable difference in monthly income between male and female employees. Human Resources, Laboratory Technicians, and Sales Executives show a slight difference with male employees showing lower monthly income. For Sales Representatives and Research Scientists, female employees showed a noticeably lower monthly income rate than their male counterparts. 
+
+
+#### Lastly, we examined the proportion of employees by gender in each role.
+
+```{r job role instight - part 3b}
+### Gender parity with respect to job_role occupancy
+
+work %>% select(gender, job_role) %>% group_by(job_role) %>% arrange(job_role) %>% count(gender)
+
+work %>% select(gender, job_role) %>% ggplot(aes(x = job_role, color = gender, fill = gender)) + geom_bar(position = 'dodge') + coord_flip() + theme_minimal() + ggtitle("Job Role Occupancy by Gender") + labs(x = "Job Role", y = "Count")
+```
+
+
+#### In this aspect, for every role accounted for, there was a higher share of male employees that occupied the role compared to female employees. Some roles, like Manager and Manufacturing Director, showed only a slight difference, while others like Laboratory Technician, Sales Executive, and Research Scientist, showed an M:F ratio of 2:1, 3:2, and 3:2, respectively.  
+
+
+
+## III. Predicting Monthly Income
+
+#### The objective in this part of the analysis is to create a model that best predicts monthly income.
+
+#### In this step, we create train and test sets to get a more accurate metric via validation.
+
+
+```{r No Salary model preparation, results = 'hide'}
 ### create base model with all variables
 fit = lm(monthly_income~., data = work)
 summary(fit)
 
 ### create train and test data sets split at 75%
 set.seed(1)
-
 splitPerc = .75
-mi_model <-  work %>% dplyr::select(everything(), -YearsAtCompany, -TotalWorkingYears, -JobLevel, -PercentSalaryHike )
 trainInd <- sample(1:dim(work)[1],round(splitPerc * dim(work)[1]))
 work_model_Train = work[trainInd,]
 work_model_train2 <- work_model_Train %>% select(everything(), -monthly_income)
@@ -521,24 +647,34 @@ colnames(work_model_Test)
 ```
 
 
+#### Our first model is a Naive Bayes model which is highly predicated on probability.
+
+
 ```{r Naive Bayes - No Salary}
 nb <- naiveBayes(monthly_income~., data = work_model_Train)
 pred <- predict(nb, work_model_test2)
-pred
 error <- work_model_Test$monthly_income-as.numeric(pred)
 sqrt(mean(error^2))
-
-### an RMSE of 7897.961 is too high for what we're looking for, let's consider alternative models
 
 ```
 
 
-```{r Forward selection - No Salary}
-ols_step_forward_p(mi_lm_2, penter = 0.01, details = TRUE)
+#### An RMSE of 7897.961 is too high for what we're looking for, so we will consider alternative models.
+
+
+#### Our next model will use forward selection to determine the most important variables. 
+
+
+```{r Forward selection - No Salary - Part 1, results ='hide'}
+ols_step_forward_p(fit, penter = 0.01, details = TRUE)
+```
+
+
+```{r Forward selection - No Salary - Part 2}
 forward_mod <- lm(monthly_income~job_level +  job_role + total_working_years + business_travel, data = work)
 ### evaluating model
-sqrt(mean(xyz$residuals^2))
-ols_regress(forward_mod)
+sqrt(mean(forward_mod$residuals^2))
+# ols_regress(forward_mod)
 ols_press(forward_mod)
 ols_aic(forward_mod)
 ols_mallows_cp(forward_mod, fit)
@@ -550,7 +686,18 @@ ols_mallows_cp(forward_mod, fit)
 ```
 
 
-```{r Leaps selection - No Salary}
+#### The forward selection faired within the RMSE range we were looking for and will be a strong contender.
+
+
+#### Our next model used the {leaps} package to determine the best subset of variables given a desired number.
+
+#### In order to receive the desired model, we created a function that outputs the best model, per the function, given an n number of variables. 
+
+
+
+```{r Leaps selection - No Salary - Part 1, results ='hide'}
+models <- regsubsets(monthly_income~., data = work, nbest = 1, nvmax = NULL, force.in = NULL, force.out = NULL, method = 'exhaustive')
+
 ### create function to use leaps package to select best predictor variables
 get_model_formula <- function(id, object, outcome){
   # get models data
@@ -566,39 +713,63 @@ get_model_formula <- function(id, object, outcome){
 }
 
 ### output
-models
+#summary(models)
+```
+
+
+#### Here we examine the results and request the best model by the metrics, Adj. R2, Mallow's Cp, and BIC. We move forward with creating a model with the top 15 variables. 
+
+
+```{r Leaps selection - No Salary - Part 2}
+
+### best performing models with 3 metrics
+sum_best <- summary(models)
+data.frame(
+  Adj.R2 = which.max(sum_best$adjr2),
+  CP = which.min(sum_best$cp),
+  BIC = which.min(sum_best$bic)
+)
 
 ### using the function created above, we are able to identify the 15 top variables (w/factor levels that contribute to monthly income)
 get_model_formula(15, models, "monthly_income")
 
+
 ### using that output, we create this linear model to compare with the rest of the models
-leaps_mod_2 <- lm(monthly_income ~ business_travel + daily_rate + department + 
+leaps_mod_2 <- lm(monthly_income ~ business_travel + daily_rate + department + gender
                     + job_level + job_role + job_role  + 
                     job_role + monthly_rate + total_working_years + 
                     years_since_last_promotion + years_with_curr_manager, data = work)
 
 ### evaluate model
 sqrt(mean(leaps_mod_2$residuals^2))
-ols_regress(leaps_mod_2)
+# ols_regress(leaps_mod_2)
 ols_press(leaps_mod_2)
 ols_aic(leaps_mod_2)
 ols_mallows_cp(leaps_mod_2, fit)
-### rmse = 1038.094
+### rmse = 1036.523
 ### adj. r2 = 0.948
-### PRESS: 976,591,613
-### AIC: 14593.5
+### PRESS: 976,097,763
+### AIC: 14592.87
 ```
 
 
-```{r Stepwise selection - No Salary}
-ols_step_both_p(mi_lm_2, pent = 0.01, prem = 0.01, details = TRUE)
-stepwise_mod <- lm(monthly_income~ job_level + job_role + total_working_years + business_travel, data = work)
+#### The model responded well to both the training set and test set.
 
+#### Our last model, similar to the first, uses Stepwise selection.
+
+
+```{r Stepwise selection - No Salary - Part 1, results = 'hide'}
+ols_step_both_p(fit, pent = 0.01, prem = 0.01, details = TRUE)
+stepwise_mod <- lm(monthly_income~ job_level + job_role + total_working_years + business_travel, data = work)
+```
+
+
+```{r Stepwise selection - No Salary - Part 2}
 ### evaluate model
 ols_press(leaps_mod_2)
-ols_coll_diag(stepwise_mod)
+#ols_coll_diag(stepwise_mod)
 ols_aic(stepwise_mod)
-ols_regress(stepwise_mod)
+# ols_regress(stepwise_mod)
 sqrt(mean(stepwise_mod$residuals^2))
 ols_mallows_cp(stepwise_mod, fit)
 ### PRESS: 983,282,198
@@ -613,18 +784,22 @@ error <- work_model_Test$monthly_income-pred
 rmse <- sqrt(mean(error^2))
 rmse
 #### train/test RMSE: 1049.652
-AIC(stepwise_model)
+ols_aic(stepwise_mod)
 ### AIC: 10951.16
 ```
 
 
+#### Not surprisingly, the model of this selection method matched the results of the first selection method (forward). 
+
+#### In order to determine the best model to use, we compare them. By using Mallow's Cp, adjusted r^2, AIC, and PRESS in conjunction as metrics, we can feel confident in our model selection of best fit.
+
+
 ```{r Comparing models}
-### By using Mallow's Cp, adjusted r^2, AIC, and PRESS in conjunction as metrics, we can feel confident in our model selection of best fit.
 
 comp <- tribble(
   ~Name, ~MallowsCp, ~ adjr2, ~AIC, ~PRESS,
   "forward_mod", -4.608704, 0.947, 14598.34, 983282198,
-  "leaps_mod_2", -11.01006, 0.948, 14593.5, 976591613,
+  "leaps_mod_2", -11.54697, 0.948, 14592.87, 976097763,
   "stepwise_mod", -4.608704, 0.947, 14598.34, 983282198,
 )
 
@@ -653,9 +828,12 @@ comp %>% ggplot(aes(x = Name, y = PRESS))+
 
 ### leaps_mod_2 has lowest CV PRESS statistic
 
-### By all metrics, leaps_mod_2 seems to be the best fitted model in predicting monthly income, so we will use this model for predictions in the No Salary dataset.
 ```
 
+
+#### By all metrics, leaps_mod_2 seems to be the best fitted model in predicting monthly income, so we will use this model for predictions in the No Salary dataset.
+
+#### In order to maximize accuracy of predictions and avoid mishaps, the validation set (No Salary) should be formatted in exactly the same way as the dataset the model was created and tested with.
 
 
 ```{r Predictions for no salary dataset}
