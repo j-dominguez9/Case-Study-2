@@ -83,7 +83,7 @@ head(total)
 join <- full_join(total, yes_count, by = "education_field") %>% mutate(perc = (yes/n)*100)
 join$education_field <- as.factor(join$education_field)
 head(join)
-join %>% ggplot(aes(x = education_field, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Education Field and Attrition")
+join %>% ggplot(aes(x = education_field, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Education Field and Attrition") +  labs(x = "Education Field", y = "Percent")
 ```
 
 
@@ -98,7 +98,7 @@ head(yes_count)
 
 join <- full_join(total, yes_count, by = "age")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = age, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Age and Attrition")
+join %>% ggplot(aes(x = age, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Age and Attrition") + labs(x = "Age", y = "Percent")
 ```
 
 
@@ -113,7 +113,7 @@ yes_count
 
 join <- full_join(total, yes_count, by = "business_travel")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = business_travel, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Business Travel and Attrition")
+join %>% ggplot(aes(x = business_travel, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Business Travel and Attrition") + labs(x = "Business Travel", y = "Percent")
 ```
 
 
@@ -128,7 +128,7 @@ yes_count
 
 join <- full_join(total, yes_count, by = "department")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = department, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Department and Attrition")
+join %>% ggplot(aes(x = department, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Department and Attrition") + labs(x = "Department", y = "Percent")
 ```
 
 
@@ -143,7 +143,7 @@ head(yes_count)
 
 join <- full_join(total, yes_count, by = "distance_from_home")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = distance_from_home, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Distance From Home and Attrition")
+join %>% ggplot(aes(x = distance_from_home, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Distance From Home and Attrition") + labs(x = "Distance from Home", y = "Percent")
 ```
 
 
@@ -159,7 +159,7 @@ yes_count
 
 join <- full_join(total, yes_count, by = "education")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = education, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Education and Attrition")
+join %>% ggplot(aes(x = education, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Education and Attrition") + labs(x = "Education", y = "Percent")
 ```
 
 
@@ -174,7 +174,7 @@ yes_count
 
 join <- full_join(total, yes_count, by = "environment_satisfaction")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = environment_satisfaction, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Environment Satisfaction and Attrition")
+join %>% ggplot(aes(x = environment_satisfaction, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Environment Satisfaction and Attrition") + labs(x = "Environment Satisfaction", y = "Percent")
 
 ```
 
@@ -191,7 +191,7 @@ yes_count
 
 join <- full_join(total, yes_count, by = "gender")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = gender, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Gender and Attrition")
+join %>% ggplot(aes(x = gender, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Gender and Attrition") + labs(x = "Gender", y = "Percent")
 ```
 
 ```{r hourly rate}
@@ -205,7 +205,7 @@ yes_count
 
 join <- full_join(total, yes_count, by = "hourly_rate")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = hourly_rate, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Hourly Rate and Attrition")
+join %>% ggplot(aes(x = hourly_rate, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Hourly Rate and Attrition") + labs(x = 'Hourly Rate', y  = "Percent")
 
 ```
 
@@ -221,7 +221,7 @@ yes_count
 
 join <- full_join(total, yes_count, by = "job_involvement")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = job_involvement, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Job Involvement and Attrition")
+join %>% ggplot(aes(x = job_involvement, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Job Involvement and Attrition") + labs(x = "Job Involvement", y = "Percent")
 ```
 
 ```{r job level}
@@ -235,7 +235,7 @@ yes_count
 
 join <- full_join(total, yes_count, by = "job_level")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = job_level, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Job Level and Attrition")
+join %>% ggplot(aes(x = job_level, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Job Level and Attrition") + labs(x = "Job Level", y = "Percent")
 ```
 
 ```{r job role}
@@ -249,7 +249,7 @@ yes_count
 
 join <- full_join(total, yes_count, by = "job_role")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = job_role, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + coord_flip() + ggtitle("Job Role and Attrition")
+join %>% ggplot(aes(x = job_role, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + coord_flip() + ggtitle("Job Role and Attrition") + labs(x = "Job Role", y = "Percent")
 ```
 
 ```{r job satisfaction}
@@ -260,7 +260,7 @@ head(total)
 yes_count
 join <- full_join(total, yes_count, by = "job_satisfaction")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = job_satisfaction, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Job Satisfaction and Attrition")
+join %>% ggplot(aes(x = job_satisfaction, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Job Satisfaction and Attrition") + labs(x = "Job Satisfaction", y = "Percent")
 ```
 
 ```{r marital status}
@@ -271,7 +271,7 @@ head(total)
 yes_count
 join <- full_join(total, yes_count, by = "marital_status")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = marital_status, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Marital Status and Attrition")
+join %>% ggplot(aes(x = marital_status, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Marital Status and Attrition") + labs(x = "Marital Status", y = "Percent")
 ```
 
 
@@ -289,7 +289,7 @@ yes_count
 join <- full_join(total, yes_count, by = "monthly_income")
 join
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = monthly_income, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + coord_flip() + ggtitle("Income and Attrition")
+join %>% ggplot(aes(x = monthly_income, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + coord_flip() + ggtitle("Income and Attrition") + labs(x = "Income", y = "Percent")
 ```
 
 ```{r num of companies worked}
@@ -303,7 +303,7 @@ yes_count
 
 join <- full_join(total, yes_count, by = "num_companies_worked")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = num_companies_worked, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Number of Companies Worked and Attrition")
+join %>% ggplot(aes(x = num_companies_worked, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Number of Companies Worked and Attrition") + labs(x = "Number of Companies Worked", y = "Percent")
 ```
 
 ```{r over time}
@@ -314,7 +314,7 @@ head(total)
 yes_count
 join <- full_join(total, yes_count, by = "over_time")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = over_time, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Over Time and Attrition")
+join %>% ggplot(aes(x = over_time, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Over Time and Attrition") + labs(x = "Over Time", y = "Percent")
 ```
 
 ```{r percent salary hike}
@@ -328,7 +328,7 @@ yes_count
 
 join <- full_join(total, yes_count, by = "percent_salary_hike")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = percent_salary_hike, y = perc)) + geom_bar(stat = 'identity',  fill = 'skyblue4') + theme_minimal() + ggtitle("Percent Salary Hike and Attrition")
+join %>% ggplot(aes(x = percent_salary_hike, y = perc)) + geom_bar(stat = 'identity',  fill = 'skyblue4') + theme_minimal() + ggtitle("Percent Salary Hike and Attrition") + labs(x = "Percent Salary Hike", y = "Percent")
 ```
 
 ```{r performance rating}
@@ -342,7 +342,7 @@ yes_count
 
 join <- full_join(total, yes_count, by = "performance_rating")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = performance_rating, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') +  theme_minimal() + ggtitle("Performance Rating and Attrition")
+join %>% ggplot(aes(x = performance_rating, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') +  theme_minimal() + ggtitle("Performance Rating and Attrition") + labs(x = "Performance Rating", y = "Percent")
 
 ```
 
@@ -356,7 +356,7 @@ head(total)
 yes_count
 join <- full_join(total, yes_count, by = "relationship_satisfaction")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = relationship_satisfaction, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Relationship Satisfaction and Attrition")
+join %>% ggplot(aes(x = relationship_satisfaction, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Relationship Satisfaction and Attrition") + labs(x = "Relationship Satisfaction", y = "Percent")
 ```
 
 ```{r stock option level}
@@ -369,7 +369,7 @@ head(total)
 yes_count
 join <- full_join(total, yes_count, by = "stock_option_level")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = stock_option_level, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Stock Option Level and Attrition")
+join %>% ggplot(aes(x = stock_option_level, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Stock Option Level and Attrition") + labs(x = "Stock Option Level", y = "Percent")
 ```
 
 ```{r total working years}
@@ -384,7 +384,7 @@ yes_count
 
 join <- full_join(total, yes_count, by = "total_working_years")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = total_working_years, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Total Working Years and Attrition")
+join %>% ggplot(aes(x = total_working_years, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Total Working Years and Attrition") + labs(x = "Total Working Years", y = "Percent")
 ```
 
 ```{r training times last year}
@@ -398,7 +398,7 @@ yes_count
 
 join <- full_join(total, yes_count, by = "training_times_last_year")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = training_times_last_year, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Training Times Last Year and Attrition")
+join %>% ggplot(aes(x = training_times_last_year, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Training Times Last Year and Attrition") + labs(x = "Training Times Last Year", y = "Percent")
 ```
 
 ```{r work life balance}
@@ -412,7 +412,7 @@ yes_count
 
 join <- full_join(total, yes_count, by = "work_life_balance")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = work_life_balance, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Work Life Balance and Attrition")
+join %>% ggplot(aes(x = work_life_balance, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Work Life Balance and Attrition") + labs(x = "Work Life Balance", y = "Percent")
 ```
 
 ```{r years at company}
@@ -426,7 +426,7 @@ yes_count
 
 join <- full_join(total, yes_count, by = "years_at_company")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = years_at_company, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Years at Company and Attrition")
+join %>% ggplot(aes(x = years_at_company, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Years at Company and Attrition") + labs(x = "Years at Company", y = "Percent")
 ```
 
 ```{r years in current role}
@@ -440,7 +440,7 @@ yes_count
 
 join <- full_join(total, yes_count, by = "years_in_current_role")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = years_in_current_role, y = perc)) + geom_bar(stat = 'identity', fill =  'skyblue4') + theme_minimal() + ggtitle("Years in Current Role")
+join %>% ggplot(aes(x = years_in_current_role, y = perc)) + geom_bar(stat = 'identity', fill =  'skyblue4') + theme_minimal() + ggtitle("Years in Current Role and Attrition") + labs(x = "Years in Current Role", y = "Percent")
 ```
 
 ```{r years since last promotion}
@@ -454,7 +454,7 @@ yes_count
 
 join <- full_join(total, yes_count, by = "years_since_last_promotion")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = years_since_last_promotion, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Years Since Last Promotion")
+join %>% ggplot(aes(x = years_since_last_promotion, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Years Since Last Promotion") + labs(x = "Years Since Last Promotion", y = "Percent")
 ```
 
 ```{r yrs with current manager}
@@ -470,7 +470,7 @@ head(total)
 yes_count
 join <- full_join(total, yes_count, by = "years_with_curr_manager")
 join <- join %>% mutate(perc = (yes/n)*100)
-join %>% ggplot(aes(x = years_with_curr_manager, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Years with Current Manager and Attrition")
+join %>% ggplot(aes(x = years_with_curr_manager, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Years with Current Manager and Attrition") + labs(x = "Years With Current Manager", y = "Percent")
 ```
 
 
