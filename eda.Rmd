@@ -637,7 +637,9 @@ js %>% ggplot(aes(x = job_role, y = average_job_satisfaction)) + geom_bar(stat =
 ### Analysis:
 #### Through visual inspection from the graph above, there doesn't appear to be a noticeable difference in job satisfaction by job role. Notwithstanding, healthcare representatives had the highest average job satisfaction with 2.83 and research director had the lowest with 2.49. Although there wasn't a notable difference between job roles, it is always recommendable to increase average job satisfaction across all job roles.
 
-#### Next, as we established earlier, over time is a top contributing factor to attrition, so we wanted to examine how over time percentages are represented across job roles.
+------
+
+#### Next, as we established earlier, "over time" is a top contributing factor to attrition, so we wanted to examine how "over time" percentages are represented across job roles.
 
 ```{r job role insight - part 2}
 ### Roles with highest amount of overtime
@@ -657,7 +659,10 @@ join %>% ggplot(aes(x = job_role, y = perc)) + geom_bar(stat = 'identity', fill 
 ### Analysis: 
 #### In this case, there is a notable difference between job roles in over time. Manager role had the lowest percentage of over time with 19.6% and research scientist had the highest percentage of over time with 37.8%. In the interest of lowering attrition rates, especially among those roles with higher percentages, it is recommendable to limit over time.
 
-#### Lastly, we wanted to examine elements of gender parity with respect to job roles. First, we looked at the distribution of monthly income between genders in each job role. Next, we examined job role occupancy by gender.
+
+---------------
+
+#### We also examined elements of gender parity with respect to job roles. First, we looked at the distribution of monthly income between genders in each job role. Then, we examined job role occupancy by gender.
 
 ```{r job role instight - part 3ai}
 ### Gender parity t-test with respect to monthly income
@@ -681,6 +686,9 @@ work %>% select(gender, monthly_income, job_role) %>% ggplot(aes(x = job_role, y
 #### When adding the dimension of job roles, this finding seems to hold for most, as can be noted in the graph. Research Directors, Managers, Manufacturing Directors, Healthcare Representatives have almost no noticable difference in monthly income between male and female employees. Human Resources, Laboratory Technicians, and Sales Executives show a slight difference with male employees showing lower monthly income. For Sales Representatives and Research Scientists, female employees showed a noticeably lower monthly income rate than their male counterparts. 
 
 
+------------
+
+
 #### Lastly, we examined the proportion of employees by gender in each role.
 
 ```{r job role instight - part 3b}
@@ -693,6 +701,10 @@ work %>% select(gender, job_role) %>% ggplot(aes(x = job_role, color = gender, f
 
 ### Analysis:
 #### In this aspect, for every role accounted for, there was a higher share of male employees that occupied the role compared to female employees. Some roles, like Manager and Manufacturing Director, showed only a slight difference, while others like Laboratory Technician, Sales Executive, and Research Scientist, showed an M:F ratio of 2:1, 3:2, and 3:2, respectively.  
+
+
+
+-------------------------
 
 
 
