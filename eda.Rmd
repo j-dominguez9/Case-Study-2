@@ -545,15 +545,84 @@ aictab(cand.set = models, modnames = model.names)
 #### We used AIC model selection to distinguish among a set of possible models describing the\ relationship between over time, job involvement, monthly income, and attrition.The best-fit model,\ carrying 69% of the cumulative model weight, included every parameter with no interaction effects.\
 
 #### Our best model to predict attrition, thus is represented in the formula:\
-#### Attrition = β0 + β1over_time + β2job_involvement + β3monthly_income\
+#### Attrition = β0 + β1(over_time) + β2(job_involvement) + β3(monthly_income)\
 
+----------------------------
+
+## II. Predicting  Attrition
+
+### Building NB model
+#### We created a training set to build our model and a validation set that we will use in the end to judge our model.
+
+
+```{r}
+set.seed(3)
+
+#We will create a for loop to evaluate or model across 100 iterations
+iterations = 300
+masterAcc = matrix(nrow = iterations)
+masterSens = matrix(nrow = iterations)
+masterSpec = matrix(nrow = iterations)
+splitPerc=.75
+
+for(j in 1:iterations)
+{
+  trainIndices = sample(1:dim(work)[1],round(splitPerc*dim(work)[1]))
+  train1 = work[trainIndices,]
+  test1 = work[-trainIndices,] 
+      
+  model = naiveBayes(attrition ~ 
+                       age+
+                       factor(environment_satisfaction)+
+                       factor(job_satisfaction)+
+                       distance_from_home+
+                       factor(education_field)+
+                       hourly_rate+
+                       factor(job_involvement)+
+                       factor(job_level)+
+                       factor(job_role)+
+                       factor(marital_status)+
+                       monthly_income+
+                       num_companies_worked+
+                       factor(over_time)+
+                       stock_option_level+
+                       total_working_years+
+                       training_times_last_year+
+                       factor(work_life_balance)+
+                       years_at_company+
+                       years_in_current_role+
+                       years_with_curr_manager, data = train1)
+  classifications = predict(model, test1)
+  actual = test1$attrition
+  CM = confusionMatrix(table(classifications,actual))
+  masterAcc[j] = CM$overall[1]
+  masterSens[j] = CM$byClass[1]
+  masterSpec[j] = CM$byClass[2]
+}
+
+MeanAcc = colMeans(masterAcc)
+MeanSens = colMeans(masterSens)
+MeanSpec = colMeans(masterSpec)
+
+MeanSpec
+
+hist(masterAcc)
+hist(masterSens)
+hist(masterSpec)
+
+sum(masterSpec > 0.6)
+
+```
 
 
 
 ## II. Job Role Insights
 #### In this next part, we'll examine job role specific trends.
 
+
 #### First, we wanted to investigate if there's any  disparity with respect to job satisfaction throughout job roles
+
+
 
 ```{r job role insight - part 1}
 ### job satisfaction by role
