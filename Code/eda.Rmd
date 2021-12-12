@@ -221,6 +221,7 @@ yes_count
 
 join <- full_join(total, yes_count, by = "job_involvement")
 join <- join %>% mutate(perc = (yes/n)*100)
+join
 join %>% ggplot(aes(x = job_involvement, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Job Involvement and Attrition") + labs(x = "Job Involvement", y = "Percent")
 ```
 
@@ -287,8 +288,8 @@ yes_count <- work %>% select(attrition, monthly_income) %>%
   count(monthly_income) %>% rename(yes = n) %>% as.data.frame()
 yes_count
 join <- full_join(total, yes_count, by = "monthly_income")
-join
 join <- join %>% mutate(perc = (yes/n)*100)
+join
 join %>% ggplot(aes(x = monthly_income, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + coord_flip() + ggtitle("Income and Attrition") + labs(x = "Income", y = "Percent")
 ```
 
@@ -314,6 +315,7 @@ head(total)
 yes_count
 join <- full_join(total, yes_count, by = "over_time")
 join <- join %>% mutate(perc = (yes/n)*100)
+join
 join %>% ggplot(aes(x = over_time, y = perc)) + geom_bar(stat = 'identity', fill = 'skyblue4') + theme_minimal() + ggtitle("Over Time and Attrition") + labs(x = "Over Time", y = "Percent")
 ```
 
@@ -664,7 +666,7 @@ join %>% ggplot(aes(x = job_role, y = perc)) + geom_bar(stat = 'identity', fill 
 
 #### We also examined elements of gender parity with respect to job roles. First, we looked at the distribution of monthly income between genders in each job role. Then, we examined job role occupancy by gender.
 
-```{r job role instight - part 3ai}
+```{r job role insight - part 3ai}
 ### Gender parity t-test with respect to monthly income
 
 mon_inc_male <- work %>% select(monthly_income, gender) %>% filter(gender == "Male")
@@ -678,6 +680,9 @@ t.test(mon_inc_male$monthly_income, mon_inc_female$monthly_income)
 
 
 ```{r job role instight - part 3aii}
+work %>% select(gender, monthly_income, job_role) %>% group_by(job_role, gender) %>% arrange(job_role) %>% summarise(mean(monthly_income))
+
+
 work %>% select(gender, monthly_income, job_role) %>% ggplot(aes(x = job_role, y = monthly_income, color = gender, fill = gender)) + geom_bar(stat = 'identity', alpha = 0.9, position = 'dodge') + coord_flip() + theme_minimal() + ggtitle("Monthly Income Distribution by Job Role and Gender") + labs(x = "Job Role", y = "Monthly Income")
 ```
 
@@ -955,4 +960,3 @@ pred <- predict.lm(leaps_mod_2, newdata = no_salary, type = 'response')
 no_sal_pred <- data.frame(ID = no_salary$id, MonthlyIncome = pred)
 head(no_sal_pred)
 ```
-
