@@ -24,7 +24,7 @@ library(e1071)
 library(olsrr)
 library(leaps)
 library(tibble)
-work <- read_csv("https://raw.githubusercontent.com/j-dominguez9/Case-Study-2/main/CaseStudy2-data.csv")
+work <- read_csv("https://raw.githubusercontent.com/j-dominguez9/Case-Study-2/main/Code/Data/CaseStudy2-data.csv")
 head(work)
 
 ```
@@ -929,7 +929,7 @@ comp %>% ggplot(aes(x = Name, y = PRESS))+
 ```{r Predictions for no salary dataset}
 
 ### load no salary data set
-no_salary <- read.csv("https://raw.githubusercontent.com/j-dominguez9/Case-Study-2/main/CaseStudy2CompSet%20No%20Salary.csv")
+no_salary <- read.csv("https://raw.githubusercontent.com/j-dominguez9/Case-Study-2/main/Code/Data/CaseStudy2CompSet%20No%20Salary.csv")
 
 ### format data set to match training set
 no_salary <- no_salary %>% janitor::clean_names()
