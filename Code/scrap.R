@@ -403,6 +403,15 @@ remove(wave_theta)
 
 ## percent_salary_hike has highest AIC, so out
 
+model
+
+predict(model, test1)
+dim(model)
+
+head(test1)
+
+att_step <- ols_step_both_p(attrition~., data = work, pent = 0.01, prem = 0.01)
+
 pct <- C(work$attrition, treatment)
 ot <- C(factor(work$over_time), treatment)
 is.factor(work$attrition)
@@ -668,9 +677,31 @@ work_mod <- lm(monthly_income~., data = work)
 colnames(no_salary)
 library(here)
 here()
-tribble(
+comp <- tribble(
   ~Name, ~MallowsCp, ~ adjr2, ~AIC, ~PRESS,
   "forward_mod", -4.608704, 0.947, 14598.34, 983282198,
   "leaps_mod_2", -11.01006, 0.948, 14593.5, 976591613,
   "stepwise_mod", -4.608704, 0.947, 14598.34, 983282198,
 )
+
+comp %>% ggplot(aes(x = Name, y = MallowsCp))+
+  geom_bar(stat = 'identity', fill = 'skyblue4') + 
+  theme_minimal() + ggtitle("Model Comparison (Mallows Cp)")
+
+comp %>% ggplot(aes(x = Name, y = adjr2))+
+  geom_bar(stat = 'identity', fill = 'skyblue4') + coord_cartesian(ylim = c(0.94, 0.95)) + 
+  theme_minimal() + ggtitle("Model Comparison (Adjusted R^2)")
+
+
+comp %>% ggplot(aes(x = Name, y = AIC))+
+  geom_bar(stat = 'identity', fill = 'skyblue4') + coord_cartesian(ylim = c(14575, 14600)) +
+  theme_minimal() + ggtitle("Model Comparison (AIC)")
+
+
+comp %>% ggplot(aes(x = Name, y = PRESS))+
+  geom_bar(stat = 'identity', fill = 'skyblue4') + coord_cartesian(ylim = c(975000000, 984000000)) +
+  theme_minimal() + ggtitle("Model Comparison (PRESS)")
+
+conflicts()
+rename
+work %>% select(total_working_years) %>% filter(total_working_years == 1:10)
